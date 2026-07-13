@@ -216,3 +216,40 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ==========================================
+# Java & IDE Rules (Eclipse, IntelliJ, Maven, Gradle)
+# ==========================================
+# Compiled Java Class files
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven / Gradle Build Directories
+target/
+build/
+.gradle/
+
+# Eclipse IDE files
+.classpath
+.project
+.settings/
+bin/
+
+# IntelliJ IDEA files
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Visual Studio Code
+.vscode/
+
+# Application Specific / Local Storage
+.env
+passports/
+*.db
+*.mdf
+*.ldf
