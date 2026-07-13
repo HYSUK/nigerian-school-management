@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox fx:id="slipPrintContainer" prefHeight="780.0" prefWidth="620.0" style="-fx-background-color: #FFFFFF; -fx-padding: 25; -fx-border-color: #1e3d59; -fx-border-width: 3;" xmlns="http://javafx.com" xmlns:fx="http://javafx.com" fx:controller="com.nigeriaschools.controller.AdmissionSlipController">
+   <children>
+      <!-- HEADER MINISTRY BANNER -->
+      <VBox alignment="CENTER" spacing="4.0">
+         <children>
+            <Label text="FEDERAL REPUBLIC OF NIGERIA" textFill="#2E7D32">
+               <font><Font name="System Bold" size="11.0" /></font>
+            </Label>
+            <Label text="COMPREHENSIVE STUDENT ENROLLMENT DOSSIER" textFill="#1e3d59">
+               <font><Font name="System Bold" size="15.0" /></font>
+            </Label>
+            <Label text="Official Clearance Slip &amp; Institutional Registry Copy" textFill="#4A5568">
+               <font><Font name="System Italic" size="11.0" /></font>
+            </Label>
+         </children>
+      </VBox>
+      
+      <Separator prefWidth="200.0"><VBox.margin><Insets bottom="10.0" top="10.0" /></VBox.margin></Separator>
+      
+      <!-- BIOMETRICS AND PRIMARY ACCOUNT TOKENS -->
+      <HBox spacing="15.0">
+         <children>
+            <GridPane hgap="10.0" vgap="8.0" HBox.hgrow="ALWAYS">
+              <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="140.0" minWidth="10.0" prefWidth="130.0" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="200.0" />
+              </columnConstraints>
+              <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                <RowConstraints minHeight="10.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                  <RowConstraints minHeight="10.0" prefHeight="25.0" vgrow="SOMETIMES" />
+              </rowConstraints>
+               <children>
+                  <Label style="-fx-font-weight: bold;" text="Application ID:" GridPane.rowIndex="0" />
+                  <Label fx:id="appIdLabel" text="Loading..." textFill="#1e3d59" GridPane.columnIndex="1" GridPane.rowIndex="0"><font><Font name="System Bold" size="13.0" /></font></Label>
+                  
+                  <Label text="Full Student Name:" GridPane.rowIndex="1" />
+                  <Label fx:id="nameLabel" text="Loading..." GridPane.columnIndex="1" GridPane.rowIndex="1" style="-fx-font-weight: bold;" />
+                  
+                  <Label text="Gender / DOB:" GridPane.rowIndex="2" />
+                  <Label fx:id="bioLabel" text="Loading..." GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                  
+                  <Label text="State &amp; LGA of Origin:" GridPane.rowIndex="3" />
+                  <Label fx:id="originLabel" text="Loading..." GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                  
+                  <Label text="Residential Address:" GridPane.rowIndex="4" />
+                  <Label fx:id="addressLabel" text="Loading..." GridPane.columnIndex="1" GridPane.rowIndex="4" wrapText="true" />
+                  
+                  <Label style="-fx-font-weight: bold;" text="Portal Security PIN:" GridPane.rowIndex="5" />
+                  <Label fx:id="pinLabel" text="••••••••" textFill="#2E7D32" GridPane.columnIndex="1" GridPane.rowIndex="5"><font><Font name="System Bold" size="12.0" /></font></Label>
+               </children>
+            </GridPane>
+            
+            <VBox alignment="TOP_CENTER" maxHeight="140.0" maxWidth="115.0" minHeight="140.0" minWidth="115.0" style="-fx-border-color: #cbd5e0; -fx-border-width: 1; -fx-padding: 2;">
+               <children>
+                  <ImageView fx:id="slipPassportImage" fitHeight="135.0" fitWidth="110.0" pickOnBounds="true" preserveRatio="true" />
+               </children>
+            </VBox>
+         </children>
+      </HBox>
+      
+      <!-- SECTION 2: SPONSOR / GUARDIANSHIP DATA -->
+      <Label text="👪 Parent / Guardian Emergency Contact Details" textFill="#1e3d59" style="-fx-font-weight: bold;"><VBox.margin><Insets top="15.0" bottom="5.0"/></VBox.margin></Label>
+      <GridPane hgap="10.0" vgap="6.0" style="-fx-background-color: #F8F9FA; -fx-padding: 10; -fx-background-radius: 4;">
+         <columnConstraints>
+            <ColumnConstraints maxWidth="140.0" minWidth="10.0" prefWidth="130.0" />
+            <ColumnConstraints minWidth="10.0" prefWidth="300.0" />
+         </columnConstraints>
+         <children>
+            <Label text="Guardian Full Name:" GridPane.rowIndex="0" />
+            <Label fx:id="guardianNameLabel" text="Loading..." GridPane.columnIndex="1" GridPane.rowIndex="0" />
+            
+            <Label text="Emergency Mobile No:" GridPane.rowIndex="1" />
+            <Label fx:id="guardianPhoneLabel" text="Loading..." GridPane.columnIndex="1" GridPane.rowIndex="1" style="-fx-font-weight: bold;" />
+         </children>
+      </GridPane>
+
+      <!-- SECTION 3: ACADEMIC BACKGROUND SUMMARY -->
+      <Label text="🎓 Institutional Academic Background Tracks" textFill="#1e3d59" style="-fx-font-weight: bold;"><VBox.margin><Insets top="15.0" bottom="5.0"/></VBox.margin></Label>
+      <VBox spacing="8.0" style="-fx-background-color: #F8F9FA; -fx-padding: 12; -fx-background-radius: 4;">
+         <children>
+            <HBox spacing="10.0">
+               <children>
+                  <Label text="Primary School Inst:" style="-fx-font-weight: bold;" prefWidth="130.0"/>
+                  <Label fx:id="primaryInstLabel" text="Loading..." HBox.hgrow="ALWAYS"/>
+                  <Label fx:id="primaryDurationLabel" text="(---- to ----)" textFill="#718096"/>
+               </children>
+            </HBox>
+            
+            <!-- Dynamic Secondary Block Display Label Tracker -->
+            <HBox fx:id="slipJuniorSecRow" spacing="10.0">
+               <children>
+                  <Label text="Junior Secondary Inst:" style="-fx-font-weight: bold;" prefWidth="130.0"/>
+                  <Label fx:id="juniorSecInstLabel" text="Not Applicable (Fresh Junior Intake)" HBox.hgrow="ALWAYS" textFill="#4A5568"/>
+                  <Label fx:id="juniorSecDurationLabel" text="" textFill="#718096"/>
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+      
+      <Separator prefWidth="200.0"><VBox.margin><Insets bottom="15.0" top="15.0" /></VBox.margin></Separator>
+      
+      <!-- DIRECTIVES AND REGISTRAR SIGN OFF BAR -->
+      <HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: #EF6C00; -fx-padding: 10; -fx-background-radius: 4;">
+         <children>
+            <Label text="⚠️ Next Steps: Submit this clearance voucher sheet data layout directly to the bursar station monitoring console to assign your personalized termly school fees ledger balance profiles." textFill="WHITE" wrapText="true" prefWidth="540.0">
+               <font><Font size="11.0" /></font>
+            </Label>
+         </children>
+      </HBox>
+      
+      <HBox alignment="CENTER_RIGHT" spacing="15.0">
+         <children>
+            <Button mnemonicParsing="false" onAction="#executeNativePrint" prefHeight="38.0" prefWidth="180.0" style="-fx-background-color: #1e3d59; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 4;" text="🖨️ Spool &amp; Print Dossier" />
+         </children>
+         <VBox.margin><Insets top="20.0" /></VBox.margin>
+      </HBox>
+   </children>
+</VBox>

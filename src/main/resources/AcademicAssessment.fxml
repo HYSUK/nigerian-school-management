@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<StackPane prefHeight="650.0" prefWidth="950.0" xmlns="http://javafx.com" xmlns:fx="http://javafx.com" fx:controller="com.nigeriaschools.controller.AcademicAssessmentController">
+   <children>
+      
+      <!-- LAYER 1: THE MASTER GRADING SHEET VIEW (Hidden by default using visible="false") -->
+      <BorderPane fx:id="gradingViewPane" prefHeight="650.0" prefWidth="950.0" style="-fx-background-color: #F8F9FA;" visible="false">
+                  <top>
+            <VBox style="-fx-background-color: #FFFFFF; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 5, 0, 0, 1);" BorderPane.alignment="CENTER">
+               <children>
+                  <!-- NEW USER BRANDING AND STATS ROW -->
+                  <HBox alignment="CENTER_LEFT" style="-fx-background-color: #1e3d59; -fx-padding: 8 20 8 20;">
+                     <children>
+                        <Label fx:id="userBrandingLabel" text="🔒 ACTIVE ACCOUNT PROFILE: Mr. Chidi Okafor (Portal Terminal Staff)" textFill="WHITE">
+                           <font><Font name="System Bold" size="12.0" /></font>
+                        </Label>
+                     </children>
+                  </HBox>
+                  
+                  <!-- FILTER CONTROLS ACTION PANEL -->
+                  <HBox alignment="CENTER_LEFT" spacing="12.0">
+                     <children>
+                        <Label text="Grading Sheet" textFill="#2D3748">
+                           <font><Font name="System Bold" size="18.0" /></font>
+                           <HBox.margin><Insets right="5.0" /></HBox.margin>
+                        </Label>
+                        <ComboBox fx:id="classComboBox" prefWidth="110.0" promptText="Select Class" style="-fx-background-radius: 4;" />
+                        <ComboBox fx:id="sessionComboBox" prefWidth="140.0" promptText="Academic Session" style="-fx-background-radius: 4;" />
+                        <ComboBox fx:id="termComboBox" prefWidth="110.0" promptText="Term" style="-fx-background-radius: 4;" />
+                        <ComboBox fx:id="subjectComboBox" prefWidth="160.0" promptText="Select Subject" style="-fx-background-radius: 4;" />
+                        <Button fx:id="loadSheetButton" mnemonicParsing="false" onAction="#handleLoadSheet" style="-fx-background-color: #1A365D; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="Load Sheet" />
+                        
+                        <!-- 🌟 NEW: ADVANCED FORM ENTRY BUTTON ANCHOR -->
+                        <Button mnemonicParsing="false" onAction="#openAdvancedGradingForm" style="-fx-background-color: #3182CE; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="➕ Open Form Input" />
+                        <Button fx:id="logoutTeacherBtn" mnemonicParsing="false" onAction="#handleTeacherLogout" style="-fx-background-color: #C53030; -fx-text-fill: white; -fx-cursor: hand;" text="🔒 Lock" />
+                     </children>
+                     <padding><Insets bottom="12.0" left="20.0" right="20.0" top="12.0" /></padding>
+                  </HBox>
+               </children>
+            </VBox>
+         </top>
+
+         <center>
+            <StackPane BorderPane.alignment="CENTER">
+               <children>
+                  <TableView fx:id="gradingTableView" style="-fx-background-radius: 6; -fx-border-color: #E2E8F0; -fx-border-radius: 6;">
+                    <columns>
+                      <TableColumn fx:id="regNoColumn" editable="false" prefWidth="150.0" text="Student Reg No" />
+                      <TableColumn fx:id="firstCAColumn" prefWidth="110.0" text="1st CA (Max 20)" />
+                      <TableColumn fx:id="secondCAColumn" prefWidth="110.0" text="2nd CA (Max 20)" />
+                      <TableColumn fx:id="examScoreColumn" prefWidth="120.0" text="Exam (Max 60)" />
+                      <TableColumn fx:id="totalScoreColumn" editable="false" prefWidth="110.0" text="Total Score" />
+                      <TableColumn fx:id="gradeColumn" editable="false" prefWidth="90.0" text="Grade" />
+                      <TableColumn fx:id="remarksColumn" editable="false" prefWidth="140.0" text="Remarks" />
+                    </columns>
+                     <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY" /></columnResizePolicy>
+                  </TableView>
+                  <ProgressIndicator fx:id="progressIndicator" maxHeight="60.0" maxWidth="60.0" style="-fx-progress-color: #3182CE;" visible="false" />
+               </children>
+               <padding><Insets bottom="15.0" left="20.0" right="20.0" top="15.0" /></padding>
+            </StackPane>
+         </center>
+         <bottom>
+            <HBox alignment="CENTER_RIGHT" spacing="10.0" style="-fx-background-color: #FFFFFF; -fx-border-color: #E2E8F0; -fx-border-width: 1 0 0 0;" BorderPane.alignment="CENTER">
+               <children>
+                  <Label text="* Double-click on CA or Exam cells to edit values directly." textFill="#718096">
+                     <font><Font name="System Italic" size="12.0" /></font>
+                     <HBox.margin><Insets right="20.0" /></HBox.margin>
+                  </Label>
+                  <Button fx:id="saveChangesButton" mnemonicParsing="false" onAction="#handleSaveChanges" style="-fx-background-color: #38A169; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 20 8 20; -fx-background-radius: 4;" text="Sync &amp; Save Batch Changes" />
+               </children>
+               <padding><Insets bottom="15.0" left="20.0" right="20.0" top="15.0" /></padding>
+            </HBox>
+         </bottom>
+      </BorderPane>
+
+      <!-- LAYER 2: THE STAFF AUTHENTICATION SPLIT SCREEN (Visible by default) -->
+      <HBox fx:id="loginGatePane" alignment="CENTER" prefHeight="650.0" prefWidth="950.0" style="-fx-background-color: #f0f4f8;">
+         <children>
+            
+            <!-- LEFT PANEL: SECURE AUTH CONSOLE CONTAINER -->
+            <VBox alignment="CENTER" prefHeight="650.0" prefWidth="420.0" spacing="15.0" style="-fx-background-color: #1e3d59; -fx-padding: 40; -fx-background-radius: 8 0 0 8;">
+               <children>
+                  <Label text="STAFF VERIFICATION" textFill="WHITE">
+                     <font><Font name="System Bold" size="22.0" /></font>
+                  </Label>
+                  <Label text="Input terminal credentials to modify scores." textFill="#cbd5e0">
+                     <font><Font size="13.0" /></font>
+                     <VBox.margin><Insets bottom="15.0" /></VBox.margin>
+                  </Label>
+                  <VBox alignment="CENTER_LEFT" spacing="5.0">
+                     <children>
+                        <Label text="Username / Portal ID" textFill="WHITE" />
+                        <TextField fx:id="usernameField" prefHeight="38.0" promptText="e.g., chidi_okafor" style="-fx-background-radius: 4;" />
+                     </children>
+                  </VBox>
+                  <VBox alignment="CENTER_LEFT" spacing="5.0">
+                     <children>
+                        <Label text="Security Security PIN/Password" textFill="WHITE" />
+                        <PasswordField fx:id="passwordField" prefHeight="38.0" promptText="••••••••••••" style="-fx-background-radius: 4;" />
+                     </children>
+                  </VBox>
+                  <Button fx:id="gateLoginBtn" mnemonicParsing="false" onAction="#handleTeacherLogin" prefHeight="40.0" prefWidth="340.0" style="-fx-background-color: #17b978; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="UNLOCK GRADING SHEET">
+                     <VBox.margin><Insets top="15.0" /></VBox.margin>
+                  </Button>
+                  <Label fx:id="gateErrorLabel" textFill="#fc8181" wrapText="true">
+                     <font><Font name="System Bold" size="13.0" /></font>
+                  </Label>
+               </children>
+            </VBox>
+            
+            <!-- RIGHT PANEL: EMPTY VISUAL SPACE FOR ANNOUNCEMENTS & SCHOOL BULLETIN -->
+            <VBox prefHeight="650.0" prefWidth="480.0" spacing="15.0" style="-fx-background-color: #ffffff; -fx-padding: 40; -fx-background-radius: 0 8 8 0; -fx-border-color: #cbd5e0; -fx-border-width: 1 1 1 0;">
+               <children>
+                  <Label text="📢 Termly Assessment Bulletin" textFill="#1e3d59">
+                     <font><Font name="System Bold" size="18.0" /></font>
+                  </Label>
+                  <Label prefWidth="400.0" style="-fx-background-color: #fffaf0; -fx-padding: 12; -fx-border-color: #feebc8; -fx-border-radius: 4; -fx-background-radius: 4;" text="⚠️ DEADLINE REMINDER: All continuous assessments (1st &amp; 2nd CA) must be compiled and synchronized into SSMS before Friday terminal close." textFill="#dd6b20" wrapText="true">
+                     <font><Font name="System Bold" size="12.0" /></font>
+                  </Label>
+                  <Label text="Operational Directives:" textFill="#4a5568">
+                     <font><Font name="System Bold" size="14.0" /></font>
+                     <VBox.margin><Insets top="10.0" /></VBox.margin>
+                  </Label>
+                  <Label prefWidth="400.0" text="• Verification logs auto-record your account stamp upon row saving queries." textFill="#718096" wrapText="true" />
+                  <Label prefWidth="400.0" text="• Score modifications outside standard limits (CA: 20, Exam: 60) are systematically blocked." textFill="#718096" wrapText="true" />
+                  <Label prefWidth="400.0" text="• Ensure local server sync actions are executed under active secure pipeline feeds." textFill="#718096" wrapText="true" />
+               </children>
+            </VBox>
+         </children>
+      </HBox>
+      
+   </children>
+</StackPane>

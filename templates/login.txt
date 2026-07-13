@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal Gateway - Authentication</title>
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .portal-header {
+            background-color: #163345;
+            color: #ffffff;
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .portal-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .main-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .login-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            border-top: 5px solid #1a365d;
+            padding: 35px;
+            box-sizing: border-box;
+        }
+        .login-title {
+            font-size: 1.5rem;
+            color: #1a365d;
+            margin-top: 0;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 700;
+        }
+        .field-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #4a5568;
+        }
+        .input-wrapper {
+            position: relative;
+        }
+        .input-wrapper i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #a0aec0;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 11px 11px 11px 38px;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            color: #2d3748;
+        }
+        input:focus {
+            outline: none;
+            border-color: #3182ce;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+        }
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background-color: #2b6cb0;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+        .btn-login:hover {
+            background-color: #2c5282;
+        }
+        .notice-box {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: #718096;
+            text-align: center;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="portal-header">
+        <div class="portal-brand"><i class="fa-solid fa-shield-halved"></i> SECURE STUDENT PORTAL</div>
+    </header>
+
+    <main class="main-container">
+        <div class="login-card">
+            <div class="login-title"><i class="fa-solid fa-lock-open"></i> Portal Sign-In</div>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="field-group">
+                    <label for="username">Application ID / Username *</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="username" placeholder="e.g., JS/2026/5E102" required>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label for="password">Portal Access Password *</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-key"></i>
+                        <input type="password" id="password" placeholder="e.g., PWD-3404FE" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    Authenticate Session <i class="fa-solid fa-right-to-bracket"></i>
+                </button>
+            </form>
+
+            <div class="notice-box">
+                <i class="fa-solid fa-circle-info"></i> Fresh applicants must validate an official tracking scratch card via the registration gateway first to obtain system credentials.
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function handleLogin(event) {
+            event.preventDefault();
+            const loginBtn = document.querySelector('.btn-login');
+            const originalText = loginBtn.innerHTML;
+            
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
+
+            try {
+                const response = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) throw new Error(result.detail || "Authentication rejected.");
+
+                // Save application session parameters permanently in browser cache
+                localStorage.setItem('active_auth_app_id', result.application_id);
+                localStorage.setItem('active_auth_class', result.target_class);
+
+                alert("🔓 Access Granted: " + result.message);
+
+                // Direct routing switch based on profile completion rules
+                if (result.is_profile_pending) {
+                    // Redirect straight to wizard forms to complete missing demographics
+                    window.location.href = "/register";
+                } else {
+                    // Send to standard student metrics console dashboard
+                    window.location.href = "/dashboard";
+                }
+
+            } catch (error) {
+                alert("❌ Authentication Failed: " + error.message);
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = originalText;
+            }
+        }
+    </script>
+</body>
+</html>

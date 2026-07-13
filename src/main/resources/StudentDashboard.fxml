@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+
+<BorderPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.nigeriaschools.controller.StudentDashboardController"
+            prefWidth="800" prefHeight="600">
+
+    <!-- Top Header -->
+    <top>
+        <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-background-color: #1e3d59; -fx-padding: 10;">
+            <Label text="🎓 Student Portal Dashboard" textFill="WHITE">
+                <font><Font name="System Bold" size="18"/></font>
+            </Label>
+        </HBox>
+    </top>
+
+    <!-- Sidebar Navigation -->
+    <left>
+        <VBox spacing="10" style="-fx-background-color: #2c3e50; -fx-padding: 15;" prefWidth="180">
+            <Button text="🏠 Profile" fx:id="profileBtn" onAction="#switchToProfile"
+                    style="-fx-background-color: transparent; -fx-text-fill: white; -fx-cursor: hand;"/>
+            <Button text="📊 Results" fx:id="resultsBtn" onAction="#switchToResults"
+                    style="-fx-background-color: transparent; -fx-text-fill: white; -fx-cursor: hand;"/>
+            <Button text="📝 Print Admission Letter" fx:id="printAdmissionBtn" onAction="#handlePrintAdmissionLetter"
+                    style="-fx-background-color: #17b978; -fx-text-fill: white; -fx-font-weight: bold;"/>
+            
+            <Button text="💰 Fees" fx:id="feesBtn" onAction="#switchToFees"
+                    style="-fx-background-color: transparent; -fx-text-fill: white; -fx-cursor: hand;"/>
+            <Button text="✉ Messages" fx:id="messagesBtn" onAction="#switchToMessages"
+                    style="-fx-background-color: transparent; -fx-text-fill: white; -fx-cursor: hand;"/>
+        </VBox>
+    </left>
+
+    <!-- Main Content Area -->
+    <center>
+        <TabPane fx:id="mainTabPane" tabClosingPolicy="UNAVAILABLE">
+            <Tab text="Profile" fx:id="profileTab">
+    <VBox spacing="10" alignment="CENTER" style="-fx-padding: 20;">
+        <Label text="👤 Student Profile" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+        
+                <!-- Student Image -->
+        <ImageView fx:id="studentImageView"
+           fitHeight="120" fitWidth="120"
+           preserveRatio="true"
+           style="-fx-effect: dropshadow(gaussian, black, 5, 0.5, 0, 0);" />
+
+        <Label fx:id="studentNameLabel" text="Name: "/>
+        <Label fx:id="studentClassLabel" text="Class: "/>
+        <Label fx:id="studentStateLabel" text="State of Origin: "/>
+    </VBox>
+            </Tab>
+
+            <Tab text="Results" fx:id="resultsTab">
+                <VBox spacing="10" alignment="CENTER" style="-fx-padding: 20;">
+                    <Label text="📊 Academic Results" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+                    <TableView fx:id="resultsTable" prefHeight="300" prefWidth="500">
+                        <columns>
+                            <TableColumn fx:id="subjectCol" text="Subject" prefWidth="200"/>
+                            <TableColumn fx:id="scoreCol" text="Score" prefWidth="100"/>
+                            <TableColumn fx:id="gradeCol" text="Grade" prefWidth="100"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+
+            <Tab text="Fees" fx:id="feesTab">
+                <VBox spacing="10" alignment="CENTER" style="-fx-padding: 20;">
+                    <Label text="💰 School Fees Ledger" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+                    <Label fx:id="feesStatusLabel" text="Outstanding Fees: "/>
+                </VBox>
+            </Tab>
+
+            <Tab text="Messages" fx:id="messagesTab">
+                <VBox spacing="10" alignment="CENTER" style="-fx-padding: 20;">
+                    <Label text="✉ Messages from School" style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+                    <ListView fx:id="messagesList" prefHeight="300" prefWidth="500"/>
+                </VBox>
+            </Tab>
+        </TabPane>
+    </center>
+</BorderPane>

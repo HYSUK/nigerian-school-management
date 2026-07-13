@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - Dashboard Cockpit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800 flex flex-col md:flex-row">
+
+    <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex-shrink-0 flex flex-col border-r border-slate-800">
+        <div class="p-6 bg-slate-950 border-b border-slate-800/60 flex items-center space-x-3">
+            <div class="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center text-white text-lg font-bold">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <h2 class="text-white font-bold text-sm tracking-wide">School Portal</h2>
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Hybrid Sync Node</p>
+            </div>
+        </div>
+
+        <nav class="flex-1 p-4 space-y-1.5">
+            <button onclick="switchView('gateway')" id="menu_gateway" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition bg-slate-800 text-white">
+                <i class="fa-solid fa-chart-pie text-base w-5 text-center"></i><span>Status Gateway</span>
+            </button>
+            <button onclick="switchView('letter')" id="menu_letter" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-400 hover:bg-slate-800/50 hover:text-slate-200">
+                <i class="fa-solid fa-file-invoice text-base w-5 text-center"></i><span>Admission Letter</span>
+            </button>
+            <div class="h-px bg-slate-800 my-4"></div>
+            <button onclick="handleLogout()" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-rose-400 hover:bg-rose-950/20 hover:text-rose-300">
+                <i class="fa-solid fa-power-off text-base w-5 text-center"></i><span>Secure Logout</span>
+            </button>
+        </nav>
+
+        <div class="p-4 bg-slate-950/40 border-t border-slate-800/80 flex items-center space-x-3 text-xs">
+            <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 overflow-hidden flex-shrink-0">
+                <img id="sidebarAvatar" src="" class="w-full h-full object-cover hidden">
+                <div id="sidebarPlaceholder" class="w-full h-full flex items-center justify-center text-slate-500 font-bold"><i class="fa-solid fa-user"></i></div>
+            </div>
+            <div class="truncate">
+                <p class="text-slate-200 font-bold tracking-wide truncate" id="sidebarStudentName"></p>
+                <p class="text-[10px] text-slate-500 font-mono tracking-wider" id="sidebarAppId"></p>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        
+        <header class="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm z-10">
+            <div class="flex items-center space-x-4">
+                <div class="w-14 h-14 bg-slate-100 rounded-2xl border-2 border-slate-200 overflow-hidden shadow-inner flex-shrink-0 relative">
+                    <img id="topBannerAvatar" src="" class="w-full h-full object-cover hidden">
+                    <div id="topBannerPlaceholder" class="w-full h-full flex items-center justify-center text-slate-400 text-lg"><i class="fa-solid fa-user-graduate"></i></div>
+                </div>
+                <div>
+                    <h1 class="text-lg font-extrabold text-slate-900 tracking-tight" id="topBannerStudentName">Loading Workspace...</h1>
+                    <p class="text-xs text-slate-500 font-medium">Class Framework Designation: <span id="topBannerClass" class="font-bold text-slate-700"></span></p>
+                </div>
+            </div>
+            <div id="topBannerBadge" class="self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase">
+                Verifying Sync State...
+            </div>
+        </header>
+
+        <div class="p-6 max-w-4xl w-full mx-auto flex-1">
+            <div id="dashboardAlert" class="hidden mb-6 p-4 rounded-xl text-sm font-medium border animate-pulse"></div>
+
+            <section id="panel_gateway" class="space-y-6">
+                <div class="bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4"><i class="fa-solid fa-passport text-emerald-600 mr-2"></i>Official Admission Verification Profile</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-sm border-b border-slate-100 pb-6">
+                        <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500 font-medium">Application ID:</span><span class="font-mono font-bold text-slate-800 uppercase" id="cardAppId"></span></div>
+                        <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500 font-medium">First Name:</span><span class="font-bold text-slate-800" id="cardFirstName"></span></div>
+                        <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500 font-medium">Last Name:</span><span class="font-bold text-slate-800" id="cardLastName"></span></div>
+                        <div class="flex justify-between py-1.5 border-b border-slate-100"><span class="text-slate-500 font-medium">Assigned Class Room:</span><span class="font-bold text-emerald-700" id="cardClass"></span></div>
+                    </div>
+
+                    <div class="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div class="flex items-start space-x-3 text-xs text-slate-600">
+                            <i class="fa-solid fa-circle-nodes text-lg text-slate-400 mt-0.5"></i>
+                            <div>
+                                <p class="font-bold text-slate-800">What does your current screening status mean?</p>
+                                <p class="mt-0.5 leading-relaxed">Once the local school administrators sync their offline JavaFX system with the cloud backend nodes, your status updates instantly from here.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="panel_letter" class="hidden space-y-6">
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                    <div class="flex items-center space-x-3 border-b border-slate-100 pb-3">
+                        <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-lg"><i class="fa-solid fa-file-pdf"></i></div>
+                        <div>
+                            <h3 class="text-base font-extrabold text-slate-900">Official Screening Admission Letter</h3>
+                            <p class="text-xs text-slate-400">Verifiable high-fidelity PDF Document format</p>
+                        </div>
+                    </div>
+                    
+                    <p class="text-sm text-slate-600 leading-relaxed">If your status shows as approved, you can download your official letter using the secure download link below. Print this letter out and present it at the administrative center to complete your physical verification.</p>
+                    
+                    <div class="pt-2">
+                        <button onclick="downloadAdmissionLetter()" id="btnDownloadLetter" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 py-3 rounded-xl transition text-sm inline-flex items-center space-x-2 shadow-md">
+                            <i class="fa-solid fa-download"></i><span>Download Document (PDF)</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = "/api/v1";
+        let cachedAppId = null;
+
+        // Window Lifecycle initialization block hooks
+        window.addEventListener('DOMContentLoaded', () => {
+            cachedAppId = localStorage.getItem('portal_app_id');
+            if(!cachedAppId) {
+                window.location.href = "/home";
+                return;
+            }
+            fetchFreshServerMetrics();
+        });
+
+        // Pull fresh tracking data directly from the server matching the current cache session identity
+        async function fetchFreshServerMetrics() {
+            try {
+                const response = await fetch(`${API_BASE}/student/${cachedAppId}`);
+                if (!response.ok) throw new Error("Synchronization fetch cluster rejected data pipeline request.");
+                const res = await response.json();
+                
+                if(res.success) {
+                    populateDashboardLayout(res);
+                }
+            } catch (err) {
+                console.error("Sync Error:", err);
+                // Fall back gracefully onto localized client storage variables if the network is flaky
+                populateLayoutWithLocalFallback();
+            }
+        }
+
+        function populateDashboardLayout(data) {
+            const combinedName = `${data.first_name} ${data.last_name}`;
+            
+            // Map strings across UI positions
+            document.getElementById('topBannerStudentName').innerText = combinedName;
+            document.getElementById('sidebarStudentName').innerText = combinedName;
+            document.getElementById('topBannerClass').innerText = data.target_class;
+            
+            document.getElementById('sidebarAppId').innerText = data.application_id;
+            document.getElementById('cardAppId').innerText = data.application_id;
+            document.getElementById('cardFirstName').innerText = data.first_name;
+            document.getElementById('cardLastName').innerText = data.last_name;
+            document.getElementById('cardClass').innerText = data.target_class;
+
+            // Handle system rendering logic based on image path responses
+            if (data.passport_url) {
+                const navAvatar = document.getElementById('sidebarAvatar');
+                const bannerAvatar = document.getElementById('topBannerAvatar');
+                
+                navAvatar.src = data.passport_url;
+                bannerAvatar.src = data.passport_url;
+                
+                navAvatar.classList.remove('hidden');
+                bannerAvatar.classList.remove('hidden');
+                document.getElementById('sidebarPlaceholder').classList.add('hidden');
+                document.getElementById('topBannerPlaceholder').classList.add('hidden');
+            }
+
+            // Sync Badge status changes dynamically
+            const badge = document.getElementById('topBannerBadge');
+            if (data.admission_status.includes("Approved")) {
+                badge.innerText = "Approved & Synced";
+                badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-emerald-100 text-emerald-800 border border-emerald-200";
+            } else {
+                badge.innerText = "Awaiting Screening";
+                badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-amber-100 text-amber-800 border border-amber-200 animate-pulse";
+            }
+        }
+
+        function populateLayoutWithLocalFallback() {
+            const fName = localStorage.getItem('portal_first_name') || 'Student';
+            const lName = localStorage.getItem('portal_last_name') || '';
+            const cls = localStorage.getItem('portal_class') || 'Pending';
+            
+            const stubData = {
+                application_id: cachedAppId,
+                first_name: fName,
+                last_name: lName,
+                target_class: cls,
+                passport_url: localStorage.getItem('portal_passport') || null,
+                admission_status: "Local Cache View (Offline Mode)"
+            };
+            populateDashboardLayout(stubData);
+        }
+
+        // Dashboard Single Page Panel toggle switches
+        function switchView(targetPanel) {
+            const panels = ['gateway', 'letter'];
+            panels.forEach(p => {
+                const el = document.getElementById(`panel_${p}`);
+                const menuBtn = document.getElementById(`menu_${p}`);
+                
+                if (p === targetPanel) {
+                    el.classList.remove('hidden');
+                    menuBtn.className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition bg-slate-800 text-white";
+                } else {
+                    el.classList.add('hidden');
+                    menuBtn.className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-400 hover:bg-slate-800/50 hover:text-slate-200";
+                }
+            });
+        }
+
+        // Native streaming handler: Download PDF letters via specific identification codes
+        function downloadAdmissionLetter() {
+            // Converts characters like "/" cleanly to match route security mapping signatures
+            const encodedId = cachedAppId.replace(/\//g, "_");
+            window.open(`${API_BASE}/admission-letter/${encodedId}`, '_blank');
+        }
+
+        // Flush credentials and session states safely on exit
+        function handleLogout() {
+            localStorage.clear();
+            window.location.href = "/home";
+        }
+    </script>
+</body>
+</html>

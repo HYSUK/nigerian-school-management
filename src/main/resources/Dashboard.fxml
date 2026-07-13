@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<HBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="680.0" prefWidth="1200.0" xmlns="http://javafx.com" xmlns:fx="http://javafx.com" fx:controller="com.nigeriaschools.controller.DashboardController">
+   <children>
+      <VBox prefHeight="680.0" prefWidth="220.0" style="-fx-background-color: #1e3d59; -fx-padding: 15;">
+         <children>
+            <Label text="SCHOOL ADMIN" textFill="WHITE"><font><Font name="System Bold" size="18.0" /></font></Label>
+            <Separator prefWidth="200.0" style="-fx-opacity: 0.3;"><VBox.margin><Insets bottom="15.0" top="10.0"/></VBox.margin></Separator>
+            
+            <Button fx:id="homeMenuBtn" onAction="#switchToHome" mnemonicParsing="false" prefHeight="40.0" prefWidth="190.0" style="-fx-background-color: #17b978; -fx-text-fill: white; -fx-alignment: LEFT; -fx-font-weight: bold; -fx-cursor: hand;" text="🏠 Home Portal Dashboard" />
+            <Button fx:id="admissionMenuBtn" onAction="#switchToAdmissions" mnemonicParsing="false" prefHeight="40.0" prefWidth="190.0" style="-fx-background-color: #17b978; -fx-text-fill: white; -fx-alignment: LEFT; -fx-font-weight: bold; -fx-cursor: hand;" text="👤 Student Admissions" />
+            <Button fx:id="cardMenuBtn" onAction="#switchToScratchCards" mnemonicParsing="false" prefHeight="40.0" prefWidth="190.0" style="-fx-background-color: transparent; -fx-text-fill: #e8e8e8; -fx-alignment: LEFT; -fx-cursor: hand;" text="💳 Scratch Card Panel"><VBox.margin><Insets top="5.0"/></VBox.margin></Button>
+            <Button fx:id="assessmentMenuBtn" onAction="#switchToAssessment" mnemonicParsing="false" prefHeight="40.0" prefWidth="190.0" style="-fx-background-color: transparent; -fx-text-fill: #e8e8e8; -fx-alignment: LEFT; -fx-cursor: hand;" text="📝 Academic Assessments"><VBox.margin><Insets top="5.0"/></VBox.margin></Button>
+            <Button fx:id="feesMenuBtn" onAction="#switchToFees" mnemonicParsing="false" prefHeight="40.0" prefWidth="190.0" style="-fx-background-color: transparent; -fx-text-fill: #e8e8e8; -fx-alignment: LEFT; -fx-cursor: hand;" text="💰 School Fees Ledger"><VBox.margin><Insets top="5.0"/></VBox.margin></Button>
+            <Button fx:id="loginMenuBtn" onAction="#openStudentLoginDialog" mnemonicParsing="false" prefHeight="40.0" prefWidth="190.0" style="-fx-background-color: transparent; -fx-text-fill: #e8e8e8; -fx-alignment: LEFT; -fx-cursor: hand;" text="🔒 Student Login"><VBox.margin><Insets top="5.0"/></VBox.margin></Button>
+         </children>
+      </VBox>
+
+      <TabPane fx:id="mainTabPane" prefHeight="680.0" prefWidth="980.0" side="TOP" style="-fx-background-color: #f5f7fa;" tabClosingPolicy="UNAVAILABLE" HBox.hgrow="ALWAYS">
+         <tabs>
+         
+            <Tab fx:id="homeTab" text="Home Page">
+               <content>
+                  <StackPane prefHeight="650.0" prefWidth="980.0" style="-fx-background-color: #f8fafc;">
+                     <children>
+                        
+                        <ImageView fitHeight="380.0" fitWidth="380.0" opacity="0.04" pickOnBounds="true" preserveRatio="true">
+                           <image>
+                              <Image url="@/assets/logo.png" />
+                           </image>
+                        </ImageView>
+                        
+                        <AnchorPane style="-fx-background-color: transparent; -fx-padding: 30;">
+                           <children>
+                              <HBox layoutX="30.0" layoutY="20.0" prefWidth="910.0" spacing="15.0" alignment="CENTER_LEFT">
+                                 <children>
+                                    <ImageView fitHeight="60.0" fitWidth="60.0" pickOnBounds="true" preserveRatio="true">
+                                       <image>
+                                          <Image url="@/assets/logo.png" />
+                                       </image>
+                                    </ImageView>
+                                    
+                                    <VBox spacing="4.0" HBox.hgrow="ALWAYS">
+                                       <children>
+                                          <Label text="HYSUK-HYBRID SCHOOL PORTAL OPERATIONS" textFill="#1e3d59">
+                                             <font><Font name="System Bold" size="22.0" /></font>
+                                          </Label>
+                                          <Label text="Authoritative Academic, Financial, and Data Registry Tracking Management Core Console Hub" textFill="#718096">
+                                             <font><Font name="System Italic" size="11.0" /></font>
+                                          </Label>
+                                       </children>
+                                    </VBox>
+                                 </children>
+                              </HBox>
+                              
+                              <Separator layoutX="30.0" layoutY="95.0" prefWidth="910.0" />
+                              
+                              <HBox layoutX="30.0" layoutY="125.0" spacing="20.0" prefWidth="910.0">
+                                 <children>
+                                    <VBox prefHeight="130.0" prefWidth="285.0" style="-fx-background-color: #ffffff; -fx-border-color: #e2e8f0; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 20;">
+                                       <children>
+                                          <Label text="STUDENT ROSTER DIRECTORY" textFill="#718096" style="-fx-font-weight: bold;"><font><Font size="11.0" /></font></Label>
+                                          <Label fx:id="homeStudentCountLabel" text="14 Enrolled Students" textFill="#1e3d59" style="-fx-font-weight: bold;"><font><Font size="20.0" /></font><VBox.margin><Insets top="10.0"/></VBox.margin></Label>
+                                          <Label text="Synchronized Local MS SQL Rows" textFill="#a0aec0"><font><Font size="11.0" /></font><VBox.margin><Insets top="15.0"/></VBox.margin></Label>
+                                       </children>
+                                    </VBox>
+                                    
+                                    <VBox prefHeight="130.0" prefWidth="285.0" style="-fx-background-color: #ffffff; -fx-border-color: #e2e8f0; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 20;">
+                                       <children>
+                                          <Label text="BURSARY SECURITY LOCKS" textFill="#718096" style="-fx-font-weight: bold;"><font><Font size="11.0" /></font></Label>
+                                          <Label text="Armed Compliance" textFill="#17b978" style="-fx-font-weight: bold;"><font><Font size="20.0" /></font><VBox.margin><Insets top="10.0"/></VBox.margin></Label>
+                                          <Label text="Conditional OpenPDF Gateways Active" textFill="#a0aec0"><font><Font size="11.0" /></font><VBox.margin><Insets top="15.0"/></VBox.margin></Label>
+                                       </children>
+                                    </VBox>
+                                    
+                                    <VBox prefHeight="130.0" prefWidth="285.0" style="-fx-background-color: #ffffff; -fx-border-color: #e2e8f0; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 20;">
+                                       <children>
+                                          <Label text="HYBRID CLOUD INSTANCE GATEWAY" textFill="#718096" style="-fx-font-weight: bold;"><font><Font size="11.0" /></font></Label>
+                                          <Label text="Online / Listening" textFill="#d69e2e" style="-fx-font-weight: bold;"><font><Font size="20.0" /></font><VBox.margin><Insets top="10.0"/></VBox.margin></Label>
+                                          <Label text="FastAPI Port 8000 Sync Pipelines Ready" textFill="#a0aec0"><font><Font size="11.0" /></font><VBox.margin><Insets top="15.0"/></VBox.margin></Label>
+                                       </children>
+                                    </VBox>
+                                 </children>
+                              </HBox>
+                              
+                              <VBox layoutX="30.0" layoutY="290.0" prefWidth="910.0" spacing="12.0" style="-fx-background-color: #ffffff; -fx-border-color: #e2e8f0; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 25;">
+                                 <children>
+                                    <Label text="Operational Directives &amp; Security Profiles Overview" textFill="#1e3d59" style="-fx-font-weight: bold;"><font><Font size="15.0" /></font></Label>
+                                    <Label text="This software represents a high-density, centralized offline console designed to coordinate registry parameters natively across local networks. All continuous assessment sheets, terminal marks registries, and bursary school fee financial payments are compiled dynamically using vector-based OpenPDF layout generators." textFill="#4a5568" wrapText="true" style="-fx-line-spacing: 5;" />
+                                    <Label text="System Operations Check: Passports caching to localized user profile disk paths over authenticated Cloudinary API streams handles are stable. Database transactions observe full rollback guarantees." textFill="#718096" wrapText="true" />
+                                 </children>
+                              </VBox>
+                              
+                              <HBox layoutX="30.0" layoutY="480.0" prefWidth="910.0" alignment="CENTER" spacing="20.0" style="-fx-background-color: #edf2f7; -fx-padding: 20; -fx-background-radius: 6;">
+                                 <children>
+                                    <Label text="Ready to manage registries? Open official administration terminal workspace panel:" textFill="#2d3748" style="-fx-font-weight: bold;" />
+                                    <Button mnemonicParsing="false" onAction="#handleLinkToAdminPortal" prefHeight="40.0" prefWidth="250.0" style="-fx-background-color: #1e3d59; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 4;" text="🔒 Enter Staff Admin Portal" />
+                                 </children>
+                              </HBox>
+                           </children>
+                        </AnchorPane>
+                     </children>
+                  </StackPane>
+               </content>
+            </Tab>
+                              
+            <Tab fx:id="admissionsTab" text="Admissions">
+               <content>
+                  <AnchorPane prefHeight="650.0" prefWidth="980.0" style="-fx-padding: 20;">
+                     <children>
+                        
+                        <VBox spacing="15.0" layoutX="15.0" layoutY="15.0" prefWidth="930.0">
+                           <children>
+                              <Label text="Student Admissions Directory Console" textFill="#1e3d59">
+                                 <font><Font name="System Bold" size="22.0" /></font>
+                              </Label>
+                              
+                              <HBox alignment="CENTER_LEFT" spacing="8.0">
+                                 <children>
+                                    <TextField fx:id="printSearchField" prefHeight="35.0" prefWidth="150.0" promptText="Enter App ID or PIN..." style="-fx-background-radius: 4;" />
+                                    
+                                    <Button mnemonicParsing="false" onAction="#handleInstantPdfPrint" prefHeight="35.0" style="-fx-background-color: #1e3d59; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 4;" text="🖨️ Print PDF" />
+                                    
+                                    <Button mnemonicParsing="false" onAction="#handleIssueAdmissionLetter" prefHeight="35.0" style="-fx-background-color: #3182CE; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 4;" text="📜 Issue Letter" />
+                                    
+                                    <Button mnemonicParsing="false" onAction="#handleCompileReportCard" prefHeight="35.0" style="-fx-background-color: #4A5568; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 4;" text="📄 Report Card" />
+                                    
+                                    <Button mnemonicParsing="false" onAction="#handleMobileCloudSync" prefHeight="35.0" style="-fx-background-color: #D69E2E; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 4;" text="🔄 Sync Forms" />
+                                    
+                                    <Button mnemonicParsing="false" onAction="#handleAssignScreeningScore" prefHeight="35.0" style="-fx-background-color: #17b978; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 4;" text="🎯 Screening Result" />
+
+                                    <Button onAction="#openRegistrationDialog" prefHeight="35.0" style="-fx-background-color: #17b978; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 4;" text="➕ ADD STUDENT" />
+                                 </children>
+                              </HBox>
+                           </children>
+                        </VBox>
+                        
+                        <Separator layoutX="15.0" layoutY="110.0" prefWidth="930.0" />
+                        
+                        <TableView fx:id="studentTable" layoutX="15.0" layoutY="130.0" prefHeight="480.0" prefWidth="930.0">
+                          <columns>
+                            <TableColumn fx:id="idCol" prefWidth="60.0" text="ID" />
+                            <TableColumn fx:id="appIdCol" prefWidth="180.0" text="Application ID" />
+                            <TableColumn fx:id="nameCol" prefWidth="320.0" text="Full Student Name" />
+                            <TableColumn fx:id="classCol" prefWidth="150.0" text="Class Assigned" />
+                            <TableColumn fx:id="stateCol" prefWidth="218.0" text="State of Origin" />
+                          </columns>
+                        </TableView>
+                     </children>
+                  </AnchorPane>
+               </content>
+            </Tab>
+                        
+            <Tab fx:id="scratchCardsTab" text="Scratch Cards">
+               <content>
+                  <AnchorPane prefHeight="650.0" prefWidth="980.0" style="-fx-padding: 25;">
+                     <children>
+                        <Label layoutX="25.0" layoutY="20.0" text="Bulk Scratch Card Management Center" textFill="#1e3d59"><font><Font name="System Bold" size="22.0" /></font></Label>
+                        <Separator layoutX="25.0" layoutY="60.0" prefWidth="910.0" />
+                        
+                        <AnchorPane layoutX="25.0" layoutY="90.0" prefHeight="300.0" prefWidth="450.0" style="-fx-border-color: #ccc; -fx-border-radius: 5; -fx-background-color: #fff; -fx-padding: 20;">
+                           <children>
+                              <Label layoutX="20.0" layoutY="15.0" text="Generate New Card Batch" textFill="#1e3d59"><font><Font name="System Bold" size="16.0" /></font></Label>
+                              <Label layoutX="20.0" layoutY="60.0" text="School Section Category:" />
+                              <ComboBox fx:id="sectionBox" layoutX="20.0" layoutY="80.0" prefWidth="400.0" promptText="Select Category">
+                                 <items>
+                                    <FXCollections fx:factory="observableArrayList">
+                                       <String fx:value="JS" />
+                                       <String fx:value="SS" />
+                                    </FXCollections>
+                                 </items>
+                              </ComboBox>
+                              <Label layoutX="20.0" layoutY="130.0" text="Batch Identifier Name:" />
+                              <TextField fx:id="batchField" layoutX="20.0" layoutY="150.0" prefWidth="400.0" promptText="e.g., 2026-JS-ALPHA" />
+                              <Label layoutX="20.0" layoutY="200.0" text="Number of Cards to Print:" />
+                              <TextField fx:id="countField" layoutX="20.0" layoutY="220.0" prefWidth="200.0" text="100" />
+                              <Button layoutX="240.0" layoutY="215.0" onAction="#handleGenerateCards" prefHeight="35.0" prefWidth="180.0" style="-fx-background-color: #1e3d59; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="GENERATE CARDS" />
+                              <Label fx:id="statusLabel" alignment="CENTER" layoutX="20.0" layoutY="265.0" prefWidth="400.0" textFill="#2e7d32"><font><Font name="System Bold" size="13.0"/></font></Label>
+                           </children>
+                        </AnchorPane>
+                     </children>
+                  </AnchorPane>
+               </content>
+            </Tab>
+
+            <Tab fx:id="assessmentTab" text="Assessments">
+               <content>
+                  <fx:include fx:id="assessmentTabPane" source="AcademicAssessment.fxml" />
+               </content>
+            </Tab>
+            
+            <Tab fx:id="feesTab" text="School Fees">
+               <content>
+                  <fx:include fx:id="feesTabPane" source="SchoolFeesPayment.fxml" />
+               </content>
+            </Tab>
+         </tabs>
+      </TabPane>
+   </children>
+</HBox>

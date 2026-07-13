@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Registration Form - Portal Engine</title>
+    
+    <!-- Cloudflare FontAwesome CDN Link for Icons -->
+    <link rel="stylesheet" href="https://cloudflare.com">
+    
+    <!-- CSS Stylesheet Anchor (Insert Part 2 here) -->
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+            color: #333333;
+        }
+        .portal-header {
+            background-color: #163345;
+            color: #ffffff;
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .portal-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .portal-nav {
+            display: flex;
+            gap: 20px;
+        }
+        .portal-nav a {
+            color: #a0aec0;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .portal-nav a.active {
+            color: #48bb78;
+            border-bottom: 2px solid #48bb78;
+            padding-bottom: 2px;
+        }
+        .main-content {
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .portal-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 720px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            border-top: 5px solid #1a365d;
+            padding: 35px;
+            box-sizing: border-box;
+        }
+        .form-title {
+            font-size: 1.6rem;
+            color: #1a365d;
+            margin-top: 0;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 12px;
+        }
+        .section-banner {
+            background-color: #fffaf0;
+            border: 1px solid #feebc8;
+            border-radius: 6px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+        }
+        .section-banner h3 {
+            margin: 0;
+            color: #dd6b20;
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-step {
+            display: none !important;
+        }
+        .form-step.active {
+            display: block !important;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .field-group {
+            margin-bottom: 18px;
+        }
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #4a5568;
+        }
+        input[type="text"], input[type="password"], input[type="date"], select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            background-color: #ffffff;
+            color: #2d3748;
+        }
+        .locked-field {
+            background-color: #e2e8f0 !important;
+            color: #4a5568 !important;
+            cursor: not-allowed;
+        }
+        .btn-group {
+            margin-top: 35px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            border-top: 1px solid #edf2f7;
+            padding-top: 20px;
+        }
+        button {
+            padding: 11px 24px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+        }
+        .btn-continue, .btn-submit {
+            background-color: #2b6cb0;
+            color: #ffffff;
+        }
+        .btn-back {
+            background-color: #edf2f7;
+            color: #4a5568;
+            border: 1px solid #cbd5e0;
+        }
+        .upload-zone {
+            border: 2px dashed #cbd5e0;
+            border-radius: 6px;
+            padding: 30px;
+            text-align: center;
+            background: #f7fafc;
+            cursor: pointer;
+        }
+        #imagePreviewContainer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        #imagePreviewContainer img {
+            border: 4px solid #ffffff;
+            border-radius: 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .info-box {
+            background-color: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 15px 20px;
+            color: #2b6cb0;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 🌐 Top System Header Shell -->
+    <header class="portal-header">
+        <div class="portal-brand"><i class="fa-solid fa-graduation-cap"></i> NIGERIAN PORTAL GATEWAY</div>
+        <nav class="portal-nav">
+            <a href="/home">Home</a>
+            <a href="/register" class="active">Register</a>
+            <a href="/dashboard">Dashboard</a>
+        </nav>
+    </header>
+
+    <!-- 📑 Main Center Body Layout Canvas -->
+    <main class="main-content">
+        <div class="portal-card">
+            <h2 class="form-title"><i class="fa-regular fa-file-lines"></i> Student Enrollment Intake Form</h2>
+            
+            <form id="registrationForm" onsubmit="handleFormSubmit(event)">
+                
+                <!-- 💳 STEP 1: CARD GATEWAY -->
+                <div class="form-step active" id="step-1">
+                    <div class="section-banner">
+                        <h3><i class="fa-solid fa-ticket"></i> SECTION 0: ACCESS SCRATCH CARD VALIDATION</h3>
+                    </div>
+                    <div class="field-group">
+                        <label for="cardSerial">Card Serial Number *</label>
+                        <input type="text" id="cardSerial" placeholder="e.g., 880429985157">
+                    </div>
+                    <div class="field-group">
+                        <label for="cardPin">Card Security PIN *</label>
+                        <input type="password" id="cardPin" placeholder="•••••">
+                    </div>
+                    <div class="field-group">
+                        <label for="targetClass">Target Class Selection *</label>
+                        <select id="targetClass">
+                            <option value="">-- Select Class --</option>
+                            <option value="JS1">Junior Secondary 1 (JS1)</option>
+                            <option value="JS2">Junior Secondary 2 (JS2)</option>
+                            <option value="JS3">Junior Secondary 3 (JS3)</option>
+                            <option value="SS1">Senior Secondary 1 (SS1)</option>
+                            <option value="SS2">Senior Secondary 2 (SS2)</option>
+                            <option value="SS3">Senior Secondary 3 (SS3)</option>
+                        </select>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn-continue" onclick="validateCardAndProceed()">
+                            Continue <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 📷 STEP 2: PASSPORT PHOTO -->
+                <div class="form-step" id="step-2">
+                    <div class="section-banner">
+                        <h3><i class="fa-solid fa-camera"></i> SECTION 1: PASSPORT IMAGE UPLOAD</h3>
+                    </div>
+                    <div class="field-group">
+                        <label>Upload Student Passport Photo *</label>
+                        <div class="upload-zone" onclick="document.getElementById('passportFile').click()">
+                            <i class="fa-solid fa-cloud-arrow-up fa-2x" style="color: #4a5568; margin-bottom: 10px;"></i>
+                            <p style="margin: 0; font-size: 0.95rem; color: #4a5568;">Click to browse local device files</p>
+                            <input type="file" id="passportFile" accept="image/*" onchange="previewImage(event)" style="display: none;">
+                        </div>
+                    </div>
+                    <div id="imagePreviewContainer"></div>
+                    <div class="btn-group">
+                        <button type="button" class="btn-back" onclick="navigateStep(-1)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                        <button type="button" class="btn-continue" onclick="validatePassportAndProceed()">Continue <i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <!-- 👤 STEP 3: BIODATA -->
+                <div class="form-step" id="step-3">
+                    <div class="section-banner">
+                        <h3><i class="fa-solid fa-user"></i> SECTION 2: BIODATA DEMOGRAPHICS</h3>
+                    </div>
+                    <div class="form-grid">
+                        <div class="field-group">
+                            <label for="firstName">First Name *</label>
+                            <input type="text" id="firstName">
+                        </div>
+                        <div class="field-group">
+                            <label for="lastName">Last Name *</label>
+                            <input type="text" id="lastName">
+                        </div>
+                        <div class="field-group">
+                            <label for="gender">Gender *</label>
+                            <select id="gender">
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div class="field-group">
+                            <label for="dob">Date of Birth *</label>
+                            <input type="date" id="dob">
+                        </div>
+                        <div class="field-group">
+                            <label for="stateOfOrigin">State of Origin</label>
+                            <input type="text" id="stateOfOrigin">
+                        </div>
+                        <div class="field-group">
+                            <label for="lga">LGA of Origin</label>
+                            <input type="text" id="lga">
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label for="homeAddress">Residential Home Address *</label>
+                        <input type="text" id="homeAddress" placeholder="e.g., 14 Crescent Way">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn-back" onclick="navigateStep(-1)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                        <button type="button" class="btn-continue" onclick="validateBiodataAndProceed()">Continue <i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <!-- 👨‍👦 STEP 4: GUARDIAN -->
+                <div class="form-step" id="step-4">
+                    <div class="section-banner">
+                        <h3><i class="fa-solid fa-users-viewfinder"></i> SECTION 3: GUARDIAN INFORMATION</h3>
+                    </div>
+                    <div class="field-group">
+                        <label for="guardianName">Guardian Full Name *</label>
+                        <input type="text" id="guardianName">
+                    </div>
+                    <div class="field-group">
+                        <label for="guardianRelationship">Relationship to Student *</label>
+                        <select id="guardianRelationship">
+                            <option value="Parent">Parent (Father/Mother)</option>
+                            <option value="Uncle">Uncle</option>
+                            <option value="Aunt">Aunt</option>
+                            <option value="Sibling">Sibling</option>
+                            <option value="Grandparent">Grandparent</option>
+                            <option value="Sponsor">Sponsor / Legal Guardian</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label for="guardianPhone">Guardian Phone Number *</label>
+                        <input type="text" id="guardianPhone" placeholder="e.g., +2348033112244">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn-back" onclick="navigateStep(-1)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                        <button type="button" class="btn-continue" onclick="processGuardianToNext()">Continue <i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <!-- 🎓 STEP 5: HISTORY -->
+                <div class="form-step" id="step-5">
+                    <div class="section-banner">
+                        <h3><i class="fa-solid fa-graduation-cap"></i> SECTION 4: PREVIOUS ACADEMIC HISTORY</h3>
+                    </div>
+                    <div class="field-group">
+                        <label for="prevPrimarySchool">Previous Primary School Attended *</label>
+                        <input type="text" id="prevPrimarySchool" placeholder="e.g., Command Children School">
+                    </div>
+                    <div class="form-grid">
+                        <div class="field-group">
+                            <label for="primaryFromYear">Primary Entry Year *</label>
+                            <input type="text" id="primaryFromYear" placeholder="e.g., 2018" maxlength="4">
+                        </div>
+                        <div class="field-group">
+                            <label for="primaryToYear">Primary Graduation Year *</label>
+                            <input type="text" id="primaryToYear" placeholder="e.g., 2024" maxlength="4">
+                        </div>
+                    </div>
+
+                    <!-- 🌟 SECONDARY COMPONENT (Appears automatically via script only if an SS level class is locked) -->
+                    <div id="juniorHistoryFields" style="margin-top: 15px; border-top: 2px dashed #edf2f7; padding-top: 15px;">
+                        <div class="field-group">
+                            <label for="prevSchool">Previous Junior Secondary School Attended *</label>
+                            <input type="text" id="prevSchool" placeholder="e.g., Government College Kaduna">
+                        </div>
+                        <div class="form-grid">
+                            <div class="field-group">
+                                <label for="juniorSecFromYear">Junior Sec Entry Year *</label>
+                                <input type="text" id="juniorSecFromYear" placeholder="e.g., 2024" maxlength="4">
+                            </div>
+                            <div class="field-group">
+                                <label for="juniorSecToYear">Junior Sec Graduation Year *</label>
+                                <input type="text" id="juniorSecToYear" placeholder="e.g., 2027" maxlength="4">
+                            </div>
+                        </div>
+                        <div class="field-group" style="margin-top: 15px;">
+                            <label for="beceScore">Junior WAEC / BECE Aggregate Score Value *</label>
+                            <input type="text" id="beceScore" placeholder="e.g., 8 As, 2 Bs">
+                        </div>
+                    </div>
+                    
+                    <div id="freshJuniorMessage" style="display: none;" class="info-box">
+                        <i class="fa-solid fa-circle-info"></i> <strong>Fresh Intake Notice:</strong> Profile registration setup active for Junior Secondary entry. No legacy secondary transcript metadata fields required.
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button type="button" class="btn-back" onclick="navigateStep(-1)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+                        <button type="submit" class="btn-submit"><i class="fa-solid fa-floppy-disk"></i> Save and Complete Registration</button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </main>
+
+    <!-- JavaScript Injection Anchor Placeholder (See Part 3) -->
+       <!-- ⚙️ OPERATIONAL WIZARD LOGIC BLOCK -->
+       <script>
+        let currentStep = 1;
+        const totalSteps = 5;
+        let activeSessionApplicationID = null;
+
+        // Automated Session Interceptor and login token checker
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedAppId = localStorage.getItem('interrupted_app_id');
+            const savedClass = localStorage.getItem('interrupted_class');
+            const authAppId = localStorage.getItem('active_auth_app_id');
+            const authClass = localStorage.getItem('active_auth_class');
+
+            if (authAppId && authClass) {
+                activeSessionApplicationID = authAppId;
+                document.getElementById('cardSerial').value = "AUTHENTICATED_SESSION";
+                document.getElementById('cardSerial').disabled = true;
+                document.getElementById('cardPin').value = "•••••••••";
+                document.getElementById('cardPin').disabled = true;
+                
+                const classDropdown = document.getElementById('targetClass');
+                classDropdown.innerHTML = `<option value="${authClass}">${authClass} (Portal Verified)</option>`;
+                classDropdown.disabled = true;
+                classDropdown.classList.add('locked-field');
+                
+                document.getElementById('step-1').classList.remove('active');
+                currentStep = 2; // Jump directly to passport selection
+                document.getElementById('step-2').classList.add('active');
+                return;
+            }
+
+            if (savedAppId && savedClass) {
+                activeSessionApplicationID = savedAppId;
+                document.getElementById('cardSerial').value = "RECOVERED_SESSION";
+                document.getElementById('cardSerial').disabled = true;
+                document.getElementById('cardPin').value = "•••••••••";
+                document.getElementById('cardPin').disabled = true;
+                
+                const classDropdown = document.getElementById('targetClass');
+                classDropdown.innerHTML = `<option value="${savedClass}">${savedClass} (Recovered)</option>`;
+                classDropdown.disabled = true;
+                classDropdown.classList.add('locked-field');
+                
+                document.getElementById('step-1').classList.remove('active');
+                currentStep = 3; // Jump directly to biodata inputs
+                document.getElementById('step-3').classList.add('active');
+            }
+        });
+
+        function navigateStep(direction) {
+            const currentElement = document.getElementById(`step-${currentStep}`);
+            const nextElement = document.getElementById(`step-${currentStep + direction}`);
+            if (currentElement && nextElement) {
+                currentElement.classList.remove('active');
+                currentStep += direction;
+                nextElement.classList.add('active');
+            }
+        }
+
+        async function validateCardAndProceed() {
+            const serialField = document.getElementById('cardSerial');
+            const pinField = document.getElementById('cardPin');
+            const classDropdown = document.getElementById('targetClass');
+            const serial = serialField.value.trim();
+            const pin = pinField.value.trim();
+            const selectedClass = classDropdown.value;
+
+            if (!serial || !pin || !selectedClass) {
+                alert("⚠️ Validation Error: All card fields are mandatory.");
+                return;
+            }
+
+            const continueBtn = document.querySelector('#step-1 .btn-continue');
+            const originalText = continueBtn.innerHTML;
+            continueBtn.disabled = true;
+            continueBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Validating Gateway...';
+
+            try {
+                const response = await fetch('/api/v1/cards/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ serial: serial, pin: pin, target_class: selectedClass })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.detail || "Verification failed.");
+
+                activeSessionApplicationID = result.application_id;
+                localStorage.setItem('interrupted_app_id', result.application_id);
+                localStorage.setItem('interrupted_class', selectedClass);
+
+                alert(`🎉 CARD VALIDATED!\n\nUsername: ${result.application_id}\nPassword: ${result.portal_password}`);
+                
+                serialField.disabled = true;
+                pinField.disabled = true;
+                classDropdown.disabled = true;
+                classDropdown.classList.add('locked-field');
+                navigateStep(1);
+            } catch (error) {
+                alert("❌ Rejection: " + error.message);
+            } finally {
+                continueBtn.disabled = false;
+                continueBtn.innerHTML = originalText;
+            }
+        }
+
+        function validatePassportAndProceed() {
+            const fileInput = document.getElementById('passportFile');
+            if (!fileInput || fileInput.files.length === 0) {
+                alert("⚠️ Please attach a student passport photo.");
+                return;
+            }
+            navigateStep(1);
+        }
+
+        function previewImage(event) {
+            const container = document.getElementById('imagePreviewContainer');
+            container.innerHTML = '';
+            if (!event.target.files || event.target.files.length === 0) return;
+            const reader = new FileReader();
+            reader.onload = function() {
+                const img = document.createElement('img');
+                img.src = reader.result;
+                img.style.maxWidth = '140px';
+                img.style.maxHeight = '140px';
+                container.appendChild(img);
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        function validateBiodataAndProceed() {
+            const first = document.getElementById('firstName').value.trim();
+            const last = document.getElementById('lastName').value.trim();
+            const dob = document.getElementById('dob').value;
+            const addr = document.getElementById('homeAddress').value.trim();
+
+            if (!first || !last || !dob || !addr) {
+                alert("⚠️ Please fill out all required biodata fields.");
+                return;
+            }
+            navigateStep(1);
+        }
+
+        function processGuardianToNext() {
+            const parentName = document.getElementById('guardianName').value.trim();
+            const parentPhone = document.getElementById('guardianPhone').value.trim();
+            if (!parentName || !parentPhone) {
+                alert("⚠️ Guardian contact details are mandatory.");
+                return;
+            }
+
+            const selectedClass = document.getElementById('targetClass').value;
+            const historyFields = document.getElementById('juniorHistoryFields');
+            const freshMessage = document.getElementById('freshJuniorMessage');
+
+            if (selectedClass.startsWith('SS')) {
+                historyFields.style.withDisplay = 'block';
+                freshMessage.style.display = 'none';
+                document.getElementById('prevSchool').required = true;
+            } else {
+                historyFields.style.display = 'none';
+                freshMessage.style.display = 'block';
+                document.getElementById('prevSchool').required = false;
+            }
+            navigateStep(1);
+        }
+
+        // 🌟 COMPLETE STRUCTURAL SUBMISSION REWRITE WITH RAW STRING STREAM FIX
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            const submitBtn = document.querySelector('.btn-submit');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting Records...';
+
+            const classDropdown = document.getElementById('targetClass');
+            classDropdown.disabled = false;
+            const currentClassSelectionValue = classDropdown.value;
+            classDropdown.disabled = true;
+
+            // 🌟 FIXED: Implemented a secure fallback sequence to capture the active identification token
+            const sessionAppId = activeSessionApplicationID || 
+                                 localStorage.getItem('active_auth_app_id') || 
+                                 localStorage.getItem('interrupted_app_id');
+
+            if (!sessionAppId) {
+                alert("❌ Session Timeout Error: Active student credentials token could not be verified. Please reload or log back into your portal.");
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                return;
+            }
+
+            const payload = {
+                application_id: sessionAppId, // 🌟 FIXED: Passes the verified active token down to python
+                first_name: document.getElementById('firstName').value.trim(),
+                last_name: document.getElementById('lastName').value.trim(),
+                gender: document.getElementById('gender').value,
+                date_of_birth: document.getElementById('dob').value || null,
+                state_of_origin: document.getElementById('stateOfOrigin').value.trim(),
+                lga: document.getElementById('lga').value.trim(),
+                home_address: document.getElementById('homeAddress').value.trim(),
+                target_class: currentClassSelectionValue,
+                guardian_name: document.getElementById('guardianName').value.trim(),
+                guardian_relationship: document.getElementById('guardianRelationship').value,
+                guardian_phone: document.getElementById('guardianPhone').value.trim(),
+                prev_primary_school: document.getElementById('prevPrimarySchool').value.trim(),
+                primary_from_year: document.getElementById('primaryFromYear').value.trim(),
+                primary_to_year: document.getElementById('primaryToYear').value.trim(),
+                prev_junior_sec_school: document.getElementById('prevSchool').value.trim() || null,
+                junior_sec_from_year: document.getElementById('juniorSecFromYear').value.trim() || null,
+                junior_sec_to_year: document.getElementById('juniorSecToYear').value.trim() || null,
+                card_serial: document.getElementById('cardSerial').value.trim(),
+                card_pin: document.getElementById('cardPin').value.trim(),
+                passport_base64: null
+            };
+
+            const passportFileInput = document.getElementById('passportFile');
+            // 🌟 FIXED: Target explicit index [0] to extract the individual file object out of the browser list wrapper
+            const passportFile = passportFileInput && passportFileInput.files.length > 0 ? passportFileInput.files[0] : null;
+
+            const convertToBase64 = (file) => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                // 🌟 FIXED: Target index [1] to extract the raw base64 text payload string, removing the nested array wrapper
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+
+            try {
+                if (passportFile) {
+                    payload.passport_base64 = await convertToBase64(passportFile);
+                }
+
+                const response = await fetch('/api/v1/mobile/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                if (!response.ok) throw new Error(result.detail || "Registration processing failed.");
+
+        if (!response.ok) throw new Error(result.detail || "Registration processing failed.");
+
+        // Clear out all temporary browser session and login bypass keys 
+        localStorage.removeItem('interrupted_app_id');
+        localStorage.removeItem('interrupted_class');
+        localStorage.removeItem('active_auth_app_id');
+        localStorage.removeItem('active_auth_class');
+
+        // 🌟 FIXED: Triggers a clean native layout print dialog box window before the page drops
+        alert("🎉 Registration Completed Successfully! Preparing your official printable Enrollment Summary sheet...");
+        window.print(); 
+        
+        window.location.reload();
+
+            } catch (error) {
+                alert("❌ Transaction Failed: " + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        }
+
+</script>
+ 
+    
+    
+</body>
+</html>

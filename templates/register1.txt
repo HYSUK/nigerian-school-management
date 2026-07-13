@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Admission Profile - Registration Wizard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen py-8 px-4 font-sans text-slate-800">
+
+    <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+        
+        <div class="bg-slate-900 text-white p-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">Complete Admission Profile</h1>
+                <p class="text-xs text-slate-400 mt-1">Application Identification Number: <span id="headerAppId" class="font-mono text-emerald-400 font-bold uppercase"></span></p>
+            </div>
+            <div class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-xl text-xs flex items-center space-x-2">
+                <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <span class="text-slate-300 uppercase tracking-wider font-semibold" id="headerClass"></span>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-8 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">
+            <div id="stepIndicator1" class="text-emerald-600 flex items-center space-x-2"><span class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700">1</span><span>Personal Core</span></div>
+            <div class="w-12 h-0.5 bg-slate-200"></div>
+            <div id="stepIndicator2" class="flex items-center space-x-2"><span class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-slate-600">2</span><span>Guardian Details</span></div>
+            <div class="w-12 h-0.5 bg-slate-200"></div>
+            <div id="stepIndicator3" class="flex items-center space-x-2"><span class="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-slate-600">3</span><span>School History</span></div>
+        </div>
+
+        <div id="wizardAlert" class="hidden m-6 p-4 rounded-xl text-sm font-medium border"></div>
+
+        <form id="regForm" onsubmit="handleFormSubmission(event)" class="p-6 space-y-6">
+            
+            <div id="stepPanel1" class="space-y-4">
+                <h2 class="text-base font-bold border-b border-slate-100 pb-2 text-slate-900"><i class="fa-solid fa-user-gear text-emerald-600 mr-2"></i>Personal Demographics</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">First Name (Legal)</label>
+                        <input type="text" id="firstName" required class="w-full px-4 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-slate-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Last Name (Surname)</label>
+                        <input type="text" id="lastName" required class="w-full px-4 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-slate-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Gender</label>
+                        <select id="gender" required class="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white outline-none focus:ring-2 focus:ring-slate-900">
+                            <option value="" disabled selected>-- Select --</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Date of Birth</label>
+                        <input type="date" id="dob" required class="w-full px-4 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-slate-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">State of Origin</label>
+                        <select id="stateOfOrigin" required onchange="populateLGAs()" class="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white outline-none focus:ring-2 focus:ring-slate-900">
+                            <option value="" disabled selected>-- Select State --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">LGA of Origin</label>
+                        <select id="lga" required class="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white outline-none focus:ring-2 focus:ring-slate-900">
+                            <option value="" disabled selected>-- Choose State First --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Residential Contact Address (Nigeria)</label>
+                    <textarea id="homeAddress" rows="2" required placeholder="Street name, District, Town, State" class="w-full px-4 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-slate-900 resize-none"></textarea>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4">
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Official Student Passport Photograph</label>
+                    <div class="flex items-center space-x-4 mt-2">
+                        <div class="w-24 h-24 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative" id="passportPreviewContainer">
+                            <i class="fa-solid fa-user-astronaut text-3xl text-slate-400" id="passportPlaceholderIcon"></i>
+                            <img id="passportImgPreview" class="hidden w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1 space-y-1.5">
+                            <input type="file" id="filePassport" accept="image/jpeg, image/png" onchange="processPassportUpload(event)" class="hidden">
+                            <button type="button" onclick="document.getElementById('filePassport').click()" class="bg-slate-100 border border-slate-300 hover:bg-slate-200 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2">
+                                <i class="fa-solid fa-camera"></i><span>Select Photo File</span>
+                            </button>
+                            <p class="text-[11px] text-slate-400">Supports JPEG/PNG formats. Images are automatically auto-compressed on upload.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="stepPanel2" class="hidden space-y-4">
+                <h2 class="text-base font-bold border-b border-slate-100 pb-2 text-slate-900"><i class="fa-solid fa-users-viewfinder text-emerald-600 mr-2"></i>Parent / Guardian Information</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Full Name of Guardian</label>
+                        <input type="text" id="guardianName" required placeholder="e.g. Alhaji Musa Nasir / Dr. Mrs. Ngozi Obi" class="w-full px-4 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-slate-900">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Relationship to Student</label>
+                            <select id="guardianRelationship" required class="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white outline-none focus:ring-2 focus:ring-slate-900">
+                                <option value="Father">Father</option>
+                                <option value="Mother">Mother</option>
+                                <option value="Uncle">Uncle</option>
+                                <option value="Aunt">Aunt</option>
+                                <option value="Sponsor">Sponsor / Guardian</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Mobile Phone Number (Primary)</label>
+                            <input type="tel" id="guardianPhone" required placeholder="e.g. 08031234567" class="w-full px-4 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-slate-900">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="stepPanel3" class="hidden space-y-4">
+                <h2 class="text-base font-bold border-b border-slate-100 pb-2 text-slate-900"><i class="fa-solid fa-timeline text-emerald-600 mr-2"></i>Institutional History Framework</h2>
+                
+                <div class="space-y-4">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                        <span class="text-xs font-extrabold text-slate-500 uppercase tracking-wider block">Primary School Foundation</span>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">School Attended</label>
+                            <input type="text" id="prevPrimary" class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 outline-none focus:ring-1 focus:ring-slate-900">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">From Year</label>
+                                <input type="number" id="primaryFrom" placeholder="e.g. 2018" class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 outline-none focus:ring-1 focus:ring-slate-900">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">To Year</label>
+                                <input type="number" id="primaryTo" placeholder="e.g. 2024" class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 outline-none focus:ring-1 focus:ring-slate-900">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="juniorHighHistoryContainer" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                        <span class="text-xs font-extrabold text-slate-500 uppercase tracking-wider block">Junior Secondary Foundation</span>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">Junior Secondary School Attended</label>
+                            <input type="text" id="prevJunior" class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 outline-none focus:ring-1 focus:ring-slate-900">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">From Year</label>
+                                <input type="number" id="juniorFrom" placeholder="e.g. 2024" class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 outline-none focus:ring-1 focus:ring-slate-900">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-0.5">To Year</label>
+                                <input type="number" id="juniorTo" placeholder="e.g. 2026" class="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-300 outline-none focus:ring-1 focus:ring-slate-900">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between border-t border-slate-100 pt-4">
+                <button type="button" id="btnBack" onclick="navigateStep(-1)" class="invisible bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-5 py-2.5 rounded-xl transition text-sm flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-left"></i><span>Back</span>
+                </button>
+                <button type="button" id="btnNext" onclick="navigateStep(1)" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-6 py-2.5 rounded-xl transition text-sm flex items-center space-x-2">
+                    <span>Continue</span><i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <button type="submit" id="btnSubmitForm" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl transition text-sm flex items-center space-x-2 shadow-md">
+                    <span>Submit Complete Registration</span><i class="fa-solid fa-cloud-arrow-up"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let globalPassportBase64 = null;
+
+        // Dictionary containing sample State-to-LGA mapping data matching standard structures
+        const NIGERIAN_GEO_MAP = {
+            "Kano": ["Fagge", "Dala", "Gwale", "Nassarawa", "Tarauni", "Kano Municipal", "Ungogo", "Kumbotso"],
+            "Lagos": ["Ikeja", "Alimosho", "Ojo", "Ikorodu", "Lagos Island", "Epe", "Badagry", "Surulere"],
+            "FCT Abuja": ["Garki", "Wuse", "Asokoro", "Maitama", "Bwari", "Kuje", "Gwagwalada"],
+            "Kaduna": ["Kaduna North", "Kaduna South", "Chikun", "Igabi", "Zaria", "Sabon Gari"]
+        };
+
+        // Window Lifecycle initialization wrapper
+        window.addEventListener('DOMContentLoaded', () => {
+            const appId = localStorage.getItem('portal_app_id');
+            const cls = localStorage.getItem('portal_class');
+
+            if(!appId) {
+                window.location.href = "/home";
+                return;
+            }
+
+            document.getElementById('headerAppId').innerText = appId;
+            document.getElementById('headerClass').innerText = cls;
+
+            // Trigger structural view changes for Senior Secondary candidates
+            if(cls && cls.toUpperCase().startsWith("SS")) {
+                document.getElementById('juniorHighHistoryContainer').classList.remove('hidden');
+            }
+
+            // Populate States array dropdown
+            const stateDropdown = document.getElementById('stateOfOrigin');
+            Object.keys(NIGERIAN_GEO_MAP).forEach(s => {
+                let op = new Option(s, s);
+                stateDropdown.add(op);
+            });
+        });
+
+        function populateLGAs() {
+            const state = document.getElementById('stateOfOrigin').value;
+            const lgaDropdown = document.getElementById('lga');
+            lgaDropdown.innerHTML = '<option value="" disabled selected>-- Select LGA --</option>';
+            
+            if(NIGERIAN_GEO_MAP[state]) {
+                NIGERIAN_GEO_MAP[state].forEach(l => {
+                    lgaDropdown.add(new Option(l, l));
+                });
+            }
+        }
+
+        // Client-side HTML5 Canvas Base64 Compression Engine
+        function processPassportUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Force downscaling to standard portrait proportions (e.g., 300x300 pixels)
+                    canvas.width = 300;
+                    canvas.height = 300;
+                    ctx.drawImage(img, 0, 0, 300, 300);
+                    
+                    // Convert canvas structure to highly compressed raw base64 output string
+                    globalPassportBase64 = canvas.toDataURL('image/jpeg', 0.75);
+                    
+                    // Render image asset preview
+                    document.getElementById('passportPlaceholderIcon').classList.add('hidden');
+                    const imgPreview = document.getElementById('passportImgPreview');
+                    imgPreview.src = globalPassportBase64;
+                    imgPreview.classList.remove('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Stepper Navigation Management Logic
+        function navigateStep(direction) {
+            // Run field validations before advancing forward
+            if (direction === 1 && !validateCurrentStepFields()) {
+                showWizardAlert("Please fill out all fields on this page before continuing.");
+                return;
+            }
+            hideWizardAlert();
+
+            // Toggle old panels off
+            document.getElementById(`stepPanel${currentStep}`).classList.add('hidden');
+            document.getElementById(`stepIndicator${currentStep}`).classList.remove('text-emerald-600');
+
+            currentStep += direction;
+
+            // Toggle new panels on
+            document.getElementById(`stepPanel${currentStep}`).classList.remove('hidden');
+            document.getElementById(`stepIndicator${currentStep}`).classList.add('text-emerald-600');
+
+            // Button Controller evaluations
+            document.getElementById('btnBack').style.visibility = (currentStep === 1) ? 'hidden' : 'visible';
+            
+            if (currentStep === 3) {
+                document.getElementById('btnNext').classList.add('hidden');
+                document.getElementById('btnSubmitForm').classList.remove('hidden');
+            } else {
+                document.getElementById('btnNext').classList.remove('hidden');
+                document.getElementById('btnSubmitForm').classList.add('hidden');
+            }
+        }
+
+        function validateCurrentStepFields() {
+            const panel = document.getElementById(`stepPanel${currentStep}`);
+            const inputs = panel.querySelectorAll('input[required], select[required], textarea[required]');
+            for (let input of inputs) {
+                if (!input.value.trim()) return false;
+            }
+            if (currentStep === 1 && !globalPassportBase64) {
+                showWizardAlert("An official passport photo attachment is required.");
+                return false;
+            }
+            return true;
+        }
+
+        function showWizardAlert(msg, mode='error') {
+            const b = document.getElementById('wizardAlert');
+            b.innerText = msg;
+            b.className = `m-6 p-4 rounded-xl text-sm font-medium border ${mode==='error' ? 'bg-red-50 border-red-200 text-red-800':'bg-emerald-50 border-emerald-200 text-emerald-800'}`;
+            b.classList.remove('hidden');
+        }
+        function hideWizardAlert() { document.getElementById('wizardAlert').add('hidden'); }
+
+        // Endpoint Submission Pipeline: Handshake with /api/v1/register
+        async function handleFormSubmission(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('btnSubmitForm');
+            btn.disabled = true;
+            btn.innerText = "Transmitting Demographics Profile...";
+
+            const payload = {
+                application_id: localStorage.getItem('portal_app_id'),
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                gender: document.getElementById('gender').value,
+                date_of_birth: document.getElementById('dob').value,
+                state_of_origin: document.getElementById('stateOfOrigin').value,
+                lga: document.getElementById('lga').value,
+                home_address: document.getElementById('homeAddress').value,
+                guardian_name: document.getElementById('guardianName').value,
+                guardian_relationship: document.getElementById('guardianRelationship').value,
+                guardian_phone: document.getElementById('guardianPhone').value,
+                prev_primary_school: document.getElementById('prevPrimary').value || null,
+                primary_from_year: document.getElementById('primaryFrom').value || null,
+                primary_to_year: document.getElementById('primaryTo').value || null,
+                prev_junior_sec_school: document.getElementById('prevJunior').value || null,
+                junior_sec_from_year: document.getElementById('juniorFrom').value || null,
+                junior_sec_to_year: document.getElementById('juniorTo').value || null,
+                passport_base64: globalPassportBase64
+            };
+
+            try {
+                const response = await fetch('/api/v1/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if(!response.ok) throw new Error(data.detail || "Profile registration pipeline error.");
+
+                // Overwrite updated data metrics to client storage context caches
+                localStorage.setItem('portal_first_name', payload.first_name);
+                localStorage.setItem('portal_last_name', payload.last_name);
+
+                showWizardAlert("Profile updated and synchronized successfully! Redirecting...", 'success');
+                setTimeout(() => {
+                    window.location.href = "/dashboard";
+                }, 2000);
+
+            } catch (err) {
+                showWizardAlert(err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = `<span>Submit Complete Registration</span><i class="fa-solid fa-cloud-arrow-up"></i>`;
+            }
+        }
+    </script>
+</body>
+</html>

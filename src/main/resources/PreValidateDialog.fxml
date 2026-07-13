@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="400.0" prefWidth="420.0" style="-fx-background-color: #ffffff; -fx-padding: 20;" xmlns="http://javafx.com" xmlns:fx="http://javafx.com" fx:controller="com.nigeriaschools.controller.PreValidateController">
+   <children>
+      <Label layoutX="25.0" layoutY="20.0" text="Portal Access Pre-Validation" textFill="#1e3d59">
+         <font><Font name="System Bold" size="18.0" /></font>
+      </Label>
+      <Label layoutX="25.0" layoutY="50.0" text="Verify your scratch card credentials to proceed" textFill="#777777" />
+
+      <!-- Class assignment selector linked perfectly to your Controller variables -->
+      <Label layoutX="25.0" layoutY="95.0" text="Target Class Assignment:" />
+      <ComboBox fx:id="classBox" layoutX="25.0" layoutY="115.0" prefWidth="370.0" promptText="Select Class Level">
+         <items>
+            <FXCollections fx:factory="observableArrayList">
+               <String fx:value="JS1" /><String fx:value="JS2" /><String fx:value="JS3" />
+               <String fx:value="SS1" /><String fx:value="SS2" /><String fx:value="SS3" />
+            </FXCollections>
+         </items>
+      </ComboBox>
+
+      <Label layoutX="25.0" layoutY="160.0" text="Scratch Card Serial Number:" />
+      <TextField fx:id="serialField" layoutX="25.0" layoutY="180.0" prefWidth="370.0" promptText="Enter 12-Digit Serial" />
+
+      <Label layoutX="25.0" layoutY="225.0" text="Scratch Card Security PIN:" />
+      <TextField fx:id="pinField" layoutX="25.0" layoutY="245.0" prefWidth="370.0" promptText="Enter 10-Digit PIN" />
+
+      <Button fx:id="validateBtn" layoutX="25.0" layoutY="295.0" mnemonicParsing="false" onAction="#handleValidation" prefHeight="40.0" prefWidth="370.0" style="-fx-background-color: #1e3d59; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="VERIFY &amp; GENERATE PORTAL CREDENTIALS" />
+      <Label fx:id="errorLabel" alignment="CENTER" layoutX="25.0" layoutY="350.0" prefWidth="370.0" textFill="#c62828" wrapText="true">
+         <font><Font name="System Bold" size="12.0" /></font>
+      </Label>
+   </children>
+</AnchorPane>

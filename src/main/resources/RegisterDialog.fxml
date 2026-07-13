@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.String?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
+<!-- Added missing layout managers for the bottom layout rows -->
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="700.0" prefWidth="740.0" style="-fx-background-color: #ffffff; -fx-padding: 25;" xmlns="http://javafx.com" xmlns:fx="http://javafx.com" fx:controller="com.nigeriaschools.controller.RegisterDialogController">
+   <children>
+      <Label layoutX="25.0" layoutY="20.0" text="Student Admission Profile Intake Form" textFill="#17b978">
+         <font><Font name="System Bold" size="20.0" /></font>
+      </Label>
+      
+      <HBox layoutX="25.0" layoutY="70.0" spacing="25.0">
+         <children>
+            <!-- LEFT PANEL: Core Data Entry & Previous History -->
+            <VBox spacing="15.0">
+               <children>
+                  <!-- Demographic Data Grid Matrix -->
+                  <GridPane hgap="15.0" prefWidth="460.0" vgap="10.0">
+                     <columnConstraints>
+                        <ColumnConstraints prefWidth="120.0" />
+                        <ColumnConstraints prefWidth="325.0" />
+                     </columnConstraints>
+                     <children>
+                        <Label text="First Name:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <TextField fx:id="firstNameField" prefWidth="325.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                        
+                        <Label text="Last Name:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <TextField fx:id="lastNameField" prefWidth="325.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        
+                        <Label text="Gender:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                        <ComboBox fx:id="genderBox" prefWidth="325.0" promptText="Select Gender" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                           <items>
+                              <FXCollections fx:factory="observableArrayList">
+                                 <String fx:value="Male" />
+                                 <String fx:value="Female" />
+                              </FXCollections>
+                           </items>
+                        </ComboBox>
+                        
+                        <Label text="Date of Birth:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                        <DatePicker fx:id="dobPicker" prefWidth="325.0" promptText="Select DOB" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                        
+                        <Label text="State of Origin:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                        <ComboBox fx:id="stateComboBox" prefWidth="325.0" promptText="Select State" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                        
+                        <Label text="LGA of Origin:" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                        <ComboBox fx:id="lgaComboBox" prefWidth="325.0" promptText="Select LGA" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                        
+                        <Label text="Assigned Class:" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+                        <ComboBox fx:id="classGroupBox" prefWidth="325.0" promptText="Choose Class" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                        
+                        <Label text="Home Address:" GridPane.columnIndex="0" GridPane.rowIndex="7" />
+                        <TextField fx:id="addressField" prefWidth="325.0" GridPane.columnIndex="1" GridPane.rowIndex="7" />
+                        
+                        <Label text="Guardian Name:" GridPane.columnIndex="0" GridPane.rowIndex="8" />
+                        <TextField fx:id="guardianNameField" prefWidth="325.0" GridPane.columnIndex="1" GridPane.rowIndex="8" />
+                        
+                        <Label text="Guardian Phone:" GridPane.columnIndex="0" GridPane.rowIndex="9" />
+                        <TextField fx:id="guardianPhoneField" prefWidth="325.0" promptText="e.g. 08031234567" GridPane.columnIndex="1" GridPane.rowIndex="9" />
+                     </children>
+                     <rowConstraints>
+                        <RowConstraints /><RowConstraints /><RowConstraints /><RowConstraints /><RowConstraints /><RowConstraints /><RowConstraints /><RowConstraints /><RowConstraints /><RowConstraints />
+                     </rowConstraints>
+                  </GridPane>
+                  
+                  <!-- PREVIOUS ACADEMIC HISTORY SUB-PANEL CONTAINER BOX -->
+                  <VBox prefWidth="460.0" spacing="10.0" style="-fx-border-color: #d1d5db; -fx-border-radius: 5; -fx-padding: 12; -fx-background-color: #fafafa;">
+                     <children>
+                        <Label text="Previous Academic Background History" textFill="#1e3d59">
+                           <font><Font name="System Bold" size="13.0" /></font>
+                        </Label>
+                        
+                        <!-- Primary School Section Panel (Always Visible) -->
+                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                           <children>
+                              <TextField fx:id="primarySchoolField" prefHeight="25.0" prefWidth="210.0" promptText="Primary School Attended" />
+                              <TextField fx:id="primaryFromField" prefHeight="25.0" prefWidth="100.0" promptText="From" />
+                              <TextField fx:id="primaryToField" prefHeight="25.0" prefWidth="100.0" promptText="To" />
+                           </children>
+                        </HBox>
+                        
+                        <!-- Junior Secondary School Section Panel (Managed via Code) -->
+                        <HBox fx:id="juniorSecHistoryBox" alignment="CENTER_LEFT" spacing="10.0">
+                           <children>
+                              <TextField fx:id="juniorSecSchoolField" prefHeight="25.0" prefWidth="210.0" promptText="Junior Sec School Attended" />
+                              <TextField fx:id="juniorSecFromField" prefHeight="25.0" prefWidth="100.0" promptText="From" />
+                              <TextField fx:id="juniorSecToField" prefHeight="25.0" prefWidth="100.0" promptText="To" />
+                           </children>
+                        </HBox>
+                     </children>
+                  </VBox>
+               </children>
+            </VBox>
+            
+            <!-- RIGHT PANEL: Passport Image Upload Box Frame -->
+            <VBox alignment="TOP_CENTER" prefHeight="400.0" prefWidth="180.0" spacing="15.0" style="-fx-border-color: #d1d5db; -fx-border-radius: 6; -fx-padding: 15; -fx-background-color: #f9fafb;">
+               <children>
+                  <Label text="Student Passport" textFill="#1e3d59">
+                     <font><Font name="System Bold" size="12.0" /></font>
+                  </Label>
+                  <AnchorPane prefHeight="160.0" prefWidth="140.0" style="-fx-border-color: #cccccc; -fx-background-color: #ffffff; -fx-border-style: dashed;">
+                     <children>
+                        <ImageView fx:id="passportImageView" fitHeight="158.0" fitWidth="138.0" pickOnBounds="true" preserveRatio="false" />
+                     </children>
+                  </AnchorPane>
+                  <Button fx:id="browseBtn" mnemonicParsing="false" onAction="#handlePassportUpload" prefHeight="30.0" prefWidth="140.0" style="-fx-background-color: #1e3d59; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="📸 BROWSE" />
+                  
+                  <!-- 🔥 FIXED: Completed the broken label component definition safely -->
+                  <Label fx:id="filePathLabel" alignment="CENTER" prefWidth="140.0" text="No file selected" textAlignment="CENTER" textFill="#718096" wrapText="true">
+                     <font><Font size="10.0" /></font>
+                  </Label>
+               </children>
+            </VBox>
+         </children>
+      </HBox>
+      
+      <!-- 🔥 FIXED: Added the necessary Form Action Save/Cancel buttons block to complete the view layout -->
+      <HBox layoutX="25.0" layoutY="615.0" prefWidth="665.0" alignment="CENTER_RIGHT" spacing="15.0">
+         <children>
+            <Button mnemonicParsing="false" onAction="#handleCancel" prefHeight="35.0" prefWidth="120.0" style="-fx-background-color: #e2e8f0; -fx-text-fill: #4a5568; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 4;" text="Cancel" />
+            <Button mnemonicParsing="false" onAction="#handleSaveStudent" prefHeight="35.0" prefWidth="160.0" style="-fx-background-color: #17b978; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 4;" text="💾 Save Registration" />
+         </children>
+      </HBox>
+   </children>
+</AnchorPane>

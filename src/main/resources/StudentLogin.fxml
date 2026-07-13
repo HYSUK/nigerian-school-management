@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" prefHeight="400.0" prefWidth="350.0" spacing="15.0"
+      style="-fx-background-color: #1e3d59;"
+      xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.nigeriaschools.controller.StudentLoginController">
+
+   <children>
+      <Label text="SCHOOL PORTAL ENGINE" textFill="WHITE">
+         <font><Font name="System Bold" size="20.0" /></font>
+      </Label>
+      <Label text="Student Authentication Panel" textFill="#e8e8e8">
+         <font><Font size="13.0" /></font>
+         <VBox.margin><Insets bottom="20.0" /></VBox.margin>
+      </Label>
+      
+      <VBox alignment="CENTER_LEFT" maxWidth="280.0" spacing="5.0">
+         <children>
+            <Label text="Application ID / Scratch Card PIN" textFill="WHITE" />
+            <TextField fx:id="usernameField" prefHeight="35.0"
+                       promptText="Enter your Application ID or PIN"
+                       style="-fx-background-radius: 4;" />
+         </children>
+      </VBox>
+      
+      <VBox alignment="CENTER_LEFT" maxWidth="280.0" spacing="5.0">
+         <children>
+            <Label text="Portal Password" textFill="WHITE" />
+            <PasswordField fx:id="passwordField" prefHeight="35.0"
+                           promptText="••••••••••••"
+                           style="-fx-background-radius: 4;" />
+         </children>
+      </VBox>
+      
+      <Button fx:id="loginBtn" mnemonicParsing="false" onAction="#handleLogin"
+              prefHeight="40.0" prefWidth="280.0"
+              style="-fx-background-color: #17b978; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"
+              text="UNLOCK PORTAL">
+         <VBox.margin><Insets top="15.0" /></VBox.margin>
+      </Button>
+      
+      <Label fx:id="errorLabel" textFill="#ff6b6b" wrapText="true">
+         <font><Font name="System Bold" size="12.0" /></font>
+      </Label>
+   </children>
+   <padding>
+      <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+   </padding>
+</VBox>
