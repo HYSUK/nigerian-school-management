@@ -177,40 +177,33 @@ def save_base64_passport_to_disk(app_id: str, base64_str: str) -> str:
 @app.post("/api/v1/auth/login")
 async def portal_user_authentication(payload: LoginRequest):
     try:
-        # Use Supabase PostgreSQL connection instead of local ODBC SQL Server
         with psycopg2.connect(SUPABASE_DB_URI) as conn:
             with conn.cursor() as cursor:
+                # Select the standard student fields matching your Supabase staging table
                 query = """
                 SELECT application_id, first_name, last_name, target_class, local_passport_path
                 FROM public.cloud_students_staging
                 WHERE UPPER(TRIM(application_id)) = UPPER(%s)
                 AND UPPER(TRIM(student_password)) = UPPER(%s)
                 """
-                cursor.execute(
-                    query, (payload.username.strip(), payload.password.strip())
-                )
+                cursor.execute(query, (payload.username.strip(), payload.password.strip()))
                 row = cursor.fetchone()
 
                 if not row:
-                    raise HTTPException(
-                        status_code=401, detail="Invalid application ID or password."
-                    )
+                    raise HTTPException(status_code=401, detail="Invalid application ID or password.")
 
-                app_id, first_name, last_name, current_class, _ = row
+                app_id, first_name, last_name, target_class, _ = row
                 return {
                     "success": True,
                     "application_id": str(app_id).strip(),
                     "first_name": str(first_name).strip() if first_name else "PENDING",
                     "last_name": str(last_name).strip() if last_name else "PENDING",
-                    "target_class": str(current_class).strip() if current_class else "N/A",
-                    "is_profile_pending": (
-                        not first_name or str(first_name).strip().upper() == "PENDING"
-                    ),
+                    "target_class": str(target_class).strip() if target_class else "N/A",
+                    "is_profile_pending": (not first_name or str(first_name).strip().upper() == "PENDING")
                 }
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Database authentication error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Database authentication error: {str(e)}")
+
 
 @app.post("/api/v1/cards/verify", status_code=status.HTTP_201_CREATED)
 async def verify_and_generate_credentials(payload: CardVerificationRequest):
