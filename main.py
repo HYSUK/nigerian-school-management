@@ -20,16 +20,16 @@ DEFAULT_SUPABASE_URI = (
 )
 SUPABASE_DB_URI = os.getenv("DATABASE_URL", DEFAULT_SUPABASE_URI)
 
-# Connection pooling for local SQL Server (used when available)
+# Connection pooling for local SQL Server
 pyodbc.pooling = True
 
 app = FastAPI(
     title="Nigerian Hybrid School Management Cloud Gateway",
-    description="Cleaned & Polished Production Gateway Server",
+    description="Cleaned & Polished Supabase Cloud-Native Gateway Server",
     version="3.0.0",
 )
 
-# 🔒 Local SQL Server Database Connection String
+# 🔒 Local SQL Server Database Connection String (Used for desktop app sync)
 DB_CONN_STR = (
     "DRIVER={ODBC Driver 17 for SQL Server};"
     "SERVER=localhost,1433;"
@@ -236,8 +236,8 @@ async def verify_and_generate_credentials(payload: CardVerificationRequest):
                 cursor.execute(
                     """
                     INSERT INTO public.cloud_students_staging 
-                    (application_id, student_password, target_class, first_name, last_name, gender, state_of_origin, lga, guardian_phone, sync_status, created_at)
-                    VALUES (%s, %s, %s, 'PENDING', 'PENDING', 'PENDING', 'PENDING', 'PENDING', 'PENDING', 'PENDING_REGISTRATION', NOW())
+                    (application_id, student_password, target_class, sync_status)
+                    VALUES (%s, %s, %s, 'PENDING_REGISTRATION')
                     """,
                     (gen_app_id, gen_pwd, raw_class),
                 )
@@ -262,7 +262,7 @@ async def verify_and_generate_credentials(payload: CardVerificationRequest):
 async def complete_student_profile(payload: ProfileCompletionRequest):
     try:
         clean_app_id = payload.application_id.strip()
-        
+
         if payload.passport_base64 and payload.passport_base64.strip():
             save_base64_passport_to_disk(clean_app_id, payload.passport_base64)
 
@@ -322,7 +322,7 @@ async def complete_student_profile(payload: ProfileCompletionRequest):
                         clean_app_id,
                     ),
                 )
-                
+
                 if cursor.rowcount == 0:
                     raise HTTPException(
                         status_code=404, detail="Student application profile not found."
@@ -462,7 +462,7 @@ async def update_student_screening_result(
     local_ok = False
     cloud_ok = False
 
-    # 1. Update Supabase Cloud DB (Primary Cloud Persistence)
+    # 1. Update Supabase Cloud DB
     try:
         with psycopg2.connect(SUPABASE_DB_URI) as conn_cloud:
             with conn_cloud.cursor() as cursor_cloud:
@@ -479,7 +479,7 @@ async def update_student_screening_result(
     except Exception as e:
         print(f"--> [SUPABASE CLOUD ERROR]: {str(e)}")
 
-    # 2. Update Local SQL Server (If local DB server is accessible)
+    # 2. Update Local SQL Server (If running locally)
     try:
         with pyodbc.connect(DB_CONN_STR) as conn:
             with conn.cursor() as cursor:
