@@ -181,7 +181,7 @@ async def portal_user_authentication(payload: LoginRequest):
         with psycopg2.connect(SUPABASE_DB_URI) as conn:
             with conn.cursor() as cursor:
                 query = """
-                SELECT application_id, first_name, last_name, current_class, local_passport_path
+                SELECT application_id, first_name, last_name, target_class, local_passport_path
                 FROM public.cloud_students_staging
                 WHERE UPPER(TRIM(application_id)) = UPPER(%s)
                 AND UPPER(TRIM(student_password)) = UPPER(%s)
