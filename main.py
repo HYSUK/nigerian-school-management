@@ -3,7 +3,6 @@ from datetime import date, datetime
 import os
 from typing import List, Optional
 import uuid
-
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -17,17 +16,16 @@ import pyodbc
 load_dotenv()
 
 DEFAULT_SUPABASE_URI = (
-    "postgresql://postgres.iabqbxelyvsyifgkjcjz:uDxOwmyknWiW5t58@"
-    "aws-1-eu-central-1.pooler.supabase.com:5432/postgres"
+    "postgresql://postgres:YOUR_PASSWORD_HERE@aws-1-eu-central-1.pooler.supabase.com:5432/postgres"
 )
 SUPABASE_DB_URI = os.getenv("DATABASE_URL", DEFAULT_SUPABASE_URI)
 
-# Connection pooling for local SQL Server
+# Connection pooling for local SQL Server (used when available)
 pyodbc.pooling = True
 
 app = FastAPI(
     title="Nigerian Hybrid School Management Cloud Gateway",
-    description="Cleaned & Polished Sync Gateway Server",
+    description="Cleaned & Polished Production Gateway Server",
     version="3.0.0",
 )
 
@@ -60,8 +58,6 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 # ==========================================
 #  📋 DATA SCHEMAS
 # ==========================================
-
-
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -95,23 +91,18 @@ class ProfileCompletionRequest(BaseModel):
     passport_base64: Optional[str] = None
 
 
-# 🎯 FLEXIBLE SCREENING SYNC SCHEMA (Matches Java HttpSyncClient)
 class ScreeningUpdatePayload(BaseModel):
     model_config = ConfigDict(extra="allow")
-
-    # Application ID variants
     application_id: Optional[str] = None
     applicationId: Optional[str] = None
     app_id: Optional[str] = None
 
-    # Score variants
     screening_score: Optional[int] = None
     screeningScore: Optional[int] = None
     exam_score: Optional[int] = None
     examScore: Optional[int] = None
     score: Optional[int] = None
 
-    # Cutoff mark variants
     cutoff_mark: Optional[int] = 50
     cutoffMark: Optional[int] = 50
     cutoff: Optional[int] = 50
@@ -151,8 +142,6 @@ class AssignCredentialsPayload(BaseModel):
 # ==========================================
 #  🛠️ HELPER FUNCTIONS
 # ==========================================
-
-
 def save_base64_passport_to_disk(app_id: str, base64_str: str) -> str:
     try:
         if "," in base64_str:
@@ -172,16 +161,22 @@ def save_base64_passport_to_disk(app_id: str, base64_str: str) -> str:
 # ==========================================
 #  🚪 AUTHENTICATION & CARD VERIFICATION
 # ==========================================
-
-
 @app.post("/api/v1/auth/login")
 async def portal_user_authentication(payload: LoginRequest):
     try:
         with psycopg2.connect(SUPABASE_DB_URI) as conn:
             with conn.cursor() as cursor:
-                # Select the standard student fields matching your Supabase staging table
                 query = """
-                SELECT application_id, first_name, last_name, target_class, local_passport_path
+                SELECT 
+                    staging_id,
+                    application_id, 
+                    first_name, 
+                    last_name, 
+                    target_class, 
+                    screening_status,
+                    screening_score,
+                    cutoff_mark,
+                    passport_base64
                 FROM public.cloud_students_staging
                 WHERE UPPER(TRIM(application_id)) = UPPER(%s)
                 AND UPPER(TRIM(student_password)) = UPPER(%s)
@@ -190,104 +185,86 @@ async def portal_user_authentication(payload: LoginRequest):
                 row = cursor.fetchone()
 
                 if not row:
-                    raise HTTPException(status_code=401, detail="Invalid application ID or password.")
+                    raise HTTPException(
+                        status_code=401, detail="Invalid Application ID or Password."
+                    )
 
-                app_id, first_name, last_name, target_class, _ = row
+                (
+                    staging_id,
+                    app_id,
+                    first_name,
+                    last_name,
+                    target_class,
+                    screening_status,
+                    screening_score,
+                    cutoff_mark,
+                    passport_base64,
+                ) = row
+
+                is_pending = not first_name or str(first_name).strip().upper() == "PENDING"
+
                 return {
                     "success": True,
+                    "staging_id": staging_id,
                     "application_id": str(app_id).strip(),
-                    "first_name": str(first_name).strip() if first_name else "PENDING",
-                    "last_name": str(last_name).strip() if last_name else "PENDING",
+                    "first_name": str(first_name).strip() if first_name else "",
+                    "last_name": str(last_name).strip() if last_name else "",
                     "target_class": str(target_class).strip() if target_class else "N/A",
-                    "is_profile_pending": (not first_name or str(first_name).strip().upper() == "PENDING")
+                    "screening_status": str(screening_status).strip() if screening_status else "Pending",
+                    "screening_score": screening_score if screening_score is not None else 0,
+                    "cutoff_mark": cutoff_mark if cutoff_mark is not None else 0,
+                    "is_profile_pending": is_pending,
+                    "has_passport": bool(passport_base64),
                 }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database authentication error: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Database authentication error: {str(e)}"
+        )
 
 
 @app.post("/api/v1/cards/verify", status_code=status.HTTP_201_CREATED)
 async def verify_and_generate_credentials(payload: CardVerificationRequest):
     raw_class = payload.target_class.strip().upper().replace(" ", "")
     required_section = "JS" if raw_class.startswith("JS") else "SS"
-    conn = None
+
     try:
-        conn = pyodbc.connect(DB_CONN_STR)
-        cursor = conn.cursor()
-        conn.autocommit = False
+        with psycopg2.connect(SUPABASE_DB_URI) as conn:
+            with conn.cursor() as cursor:
+                gen_app_id = f"{required_section}/{datetime.now().year}/{str(uuid.uuid4())[:5].upper()}"
+                gen_pwd = f"PWD-{str(uuid.uuid4())[:6].upper()}"
 
-        cursor.execute(
-            """
-            SELECT CardStatus FROM [SchoolManagementDB].[dbo].[ScratchCards]
-            WHERE UPPER(LTRIM(RTRIM(SerialNumber))) = UPPER(?) AND UPPER(LTRIM(RTRIM(PinNumber))) = UPPER(?)
-        """,
-            (payload.serial.strip(), payload.pin.strip()),
-        )
-        card_row = cursor.fetchone()
+                cursor.execute(
+                    """
+                    INSERT INTO public.cloud_students_staging 
+                    (application_id, student_password, target_class, first_name, last_name, gender, state_of_origin, lga, guardian_phone, sync_status, created_at)
+                    VALUES (%s, %s, %s, 'PENDING', 'PENDING', 'PENDING', 'PENDING', 'PENDING', 'PENDING', 'PENDING_REGISTRATION', NOW())
+                    """,
+                    (gen_app_id, gen_pwd, raw_class),
+                )
+                conn.commit()
 
-        if not card_row:
-            raise HTTPException(
-                status_code=404, detail="Invalid card credentials."
-            )
-        if str(card_row[0]).strip().lower() == "used":
-            raise HTTPException(
-                status_code=400, detail="Scratch card already used."
-            )
-
-        gen_app_id = f"{required_section}/{datetime.now().year}/{str(uuid.uuid4())[:5].upper()}"
-        gen_pwd = f"PWD-{str(uuid.uuid4())[:6].upper()}"
-
-        cursor.execute(
-            """
-            INSERT INTO [SchoolManagementDB].[dbo].[Students]
-            (ApplicationID, StudentPassword, CurrentClass, FirstName, LastName, Gender, StateOfOrigin, LGA, GuardianPhone, IsActive, EnrollmentDate)
-            VALUES (?, ?, ?, 'PENDING', 'PENDING', 'PENDING', 'PENDING', 'PENDING', 'PENDING', 1, GETDATE())
-        """,
-            (gen_app_id, gen_pwd, raw_class),
-        )
-
-        cursor.execute(
-            """
-            UPDATE [SchoolManagementDB].[dbo].[ScratchCards]
-            SET CardStatus = 'Used', UsedByApplicationID = ?
-            WHERE UPPER(LTRIM(RTRIM(SerialNumber))) = UPPER(?) AND UPPER(LTRIM(RTRIM(PinNumber))) = UPPER(?)
-        """,
-            (gen_app_id, payload.serial.strip(), payload.pin.strip()),
-        )
-
-        conn.commit()
-        return {
-            "success": True,
-            "application_id": gen_app_id,
-            "portal_password": gen_pwd,
-        }
-    except pyodbc.Error as e:
-        if conn:
-            conn.rollback()
+                return {
+                    "success": True,
+                    "application_id": gen_app_id,
+                    "portal_password": gen_pwd,
+                }
+    except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Database error: {str(e)}"
+            status_code=500, detail=f"Scratch card registration error: {str(e)}"
         )
-    finally:
-        if conn:
-            conn.close()
 
 
 # ==========================================
 #  📝 REGISTRATION ENDPOINTS
 # ==========================================
-
-
 @app.post("/api/v1/register", status_code=status.HTTP_200_OK)
 @app.post("/api/v1/mobile/register", status_code=status.HTTP_200_OK)
 async def complete_student_profile(payload: ProfileCompletionRequest):
-    conn = None
     try:
         clean_app_id = payload.application_id.strip()
-        file_disk_path = "PENDING_UPLOAD"
-
+        
         if payload.passport_base64 and payload.passport_base64.strip():
-            file_disk_path = save_base64_passport_to_disk(
-                clean_app_id, payload.passport_base64
-            )
+            save_base64_passport_to_disk(clean_app_id, payload.passport_base64)
 
         parsed_dob = None
         if payload.date_of_birth and payload.date_of_birth.strip():
@@ -298,63 +275,70 @@ async def complete_student_profile(payload: ProfileCompletionRequest):
             except ValueError:
                 pass
 
-        conn = pyodbc.connect(DB_CONN_STR)
-        cursor = conn.cursor()
+        with psycopg2.connect(SUPABASE_DB_URI) as conn:
+            with conn.cursor() as cursor:
+                query = """
+                UPDATE public.cloud_students_staging
+                SET first_name = %s,
+                    last_name = %s,
+                    gender = %s,
+                    date_of_birth = %s,
+                    state_of_origin = %s,
+                    lga = %s,
+                    home_address = %s,
+                    guardian_name = %s,
+                    guardian_relationship = %s,
+                    guardian_phone = %s,
+                    prev_primary_school = %s,
+                    primary_from_year = %s,
+                    primary_to_year = %s,
+                    prev_junior_sec_school = %s,
+                    junior_sec_from_year = %s,
+                    junior_sec_to_year = %s,
+                    passport_base64 = %s,
+                    sync_status = 'PENDING_IMPORT'
+                WHERE UPPER(TRIM(application_id)) = UPPER(%s)
+                """
+                cursor.execute(
+                    query,
+                    (
+                        payload.first_name.strip()[:50],
+                        payload.last_name.strip()[:50],
+                        payload.gender.strip()[:10],
+                        parsed_dob,
+                        payload.state_of_origin.strip()[:50],
+                        payload.lga.strip()[:50],
+                        payload.home_address,
+                        payload.guardian_name,
+                        payload.guardian_relationship or "Parent",
+                        payload.guardian_phone.strip()[:15],
+                        payload.prev_primary_school,
+                        payload.primary_from_year,
+                        payload.primary_to_year,
+                        payload.prev_junior_sec_school,
+                        payload.junior_sec_from_year,
+                        payload.junior_sec_to_year,
+                        payload.passport_base64,
+                        clean_app_id,
+                    ),
+                )
+                
+                if cursor.rowcount == 0:
+                    raise HTTPException(
+                        status_code=404, detail="Student application profile not found."
+                    )
+                conn.commit()
 
-        cursor.execute(
-            """
-            UPDATE [SchoolManagementDB].[dbo].[Students]
-            SET FirstName = ?, LastName = ?, Gender = ?, DateOfBirth = ?,
-                StateOfOrigin = ?, LGA = ?, HomeAddress = ?, GuardianName = ?,
-                GuardianRelationship = ?, GuardianPhone = ?, PrevPrimarySchool = ?,
-                PrimaryFromYear = ?, PrimaryToYear = ?, PrevJuniorSecSchool = ?,
-                JuniorSecFromYear = ?, JuniorSecToYear = ?, LocalPassportPath = ?,
-                WebPassportBase64 = 'DISK_STORED'
-            WHERE UPPER(LTRIM(RTRIM(ApplicationID))) = UPPER(?)
-        """,
-            (
-                payload.first_name.strip()[:50],
-                payload.last_name.strip()[:50],
-                payload.gender.strip()[:10],
-                parsed_dob,
-                payload.state_of_origin.strip()[:50],
-                payload.lga.strip()[:50],
-                payload.home_address,
-                payload.guardian_name,
-                payload.guardian_relationship or "Parent",
-                payload.guardian_phone.strip()[:15],
-                payload.prev_primary_school,
-                payload.primary_from_year,
-                payload.primary_to_year,
-                payload.prev_junior_sec_school,
-                payload.junior_sec_from_year,
-                payload.junior_sec_to_year,
-                file_disk_path,
-                clean_app_id,
-            ),
-        )
-
-        if cursor.rowcount == 0:
-            raise HTTPException(
-                status_code=404, detail="Student profile not found."
-            )
-
-        conn.commit()
         return {"success": True, "message": "Profile saved successfully."}
-    except pyodbc.Error as e:
+    except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Database update error: {str(e)}"
         )
-    finally:
-        if conn:
-            conn.close()
 
 
 # ==========================================
 #  🌐 WEB VIEWS & DASHBOARD
 # ==========================================
-
-
 @app.get("/")
 @app.get("/home")
 async def serve_home_portal_view(request: Request):
@@ -368,50 +352,34 @@ async def serve_student_dashboard_view(
     request: Request, app_id: Optional[str] = None
 ):
     passport_url = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop"
-    first_name, last_name, current_class = "Student", "Profile", "N/A"
+    first_name, last_name, target_class = "Student", "Profile", "N/A"
     screening_status, screening_score = "Awaiting Academic Screening", "N/A"
 
     if app_id:
         try:
-            with pyodbc.connect(DB_CONN_STR) as conn:
+            with psycopg2.connect(SUPABASE_DB_URI) as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
-                        SELECT FirstName, LastName, CurrentClass, LocalPassportPath, ScreeningStatus, ScreeningScore
-                        FROM [SchoolManagementDB].[dbo].[Students]
-                        WHERE UPPER(LTRIM(RTRIM(ApplicationID))) = UPPER(?)
-                    """,
+                        SELECT first_name, last_name, target_class, screening_status, screening_score, passport_base64
+                        FROM public.cloud_students_staging
+                        WHERE UPPER(TRIM(application_id)) = UPPER(%s)
+                        """,
                         (app_id.strip(),),
                     )
                     row = cursor.fetchone()
                     if row:
-                        first_name = str(row[0]).strip()
-                        last_name = str(row[1]).strip()
-                        current_class = str(row[2]).strip()
-                        screening_status = (
-                            str(row[4]).strip()
-                            if row[4]
-                            else "Awaiting Academic Screening"
-                        )
-                        screening_score = (
-                            str(row[5]) if row[5] is not None else "N/A"
-                        )
+                        first_name = str(row[0]).strip() if row[0] else "Student"
+                        last_name = str(row[1]).strip() if row[1] else "Profile"
+                        target_class = str(row[2]).strip() if row[2] else "N/A"
+                        screening_status = str(row[3]).strip() if row[3] else "Awaiting Academic Screening"
+                        screening_score = str(row[4]) if row[4] is not None else "N/A"
 
-                        safe_app_filename = (
-                            app_id.strip().replace("/", "_") + ".jpg"
-                        )
-                        if os.path.exists(
-                            os.path.join(PASSPORT_DIR, safe_app_filename)
-                        ):
-                            passport_url = (
-                                f"/uploaded-passports/{safe_app_filename}"
-                            )
-                        elif row[3] and os.path.exists(
-                            os.path.join(
-                                PASSPORT_DIR, os.path.basename(str(row[3]).strip())
-                            )
-                        ):
-                            passport_url = f"/uploaded-passports/{os.path.basename(str(row[3]).strip())}"
+                        safe_app_filename = app_id.strip().replace("/", "_") + ".jpg"
+                        if os.path.exists(os.path.join(PASSPORT_DIR, safe_app_filename)):
+                            passport_url = f"/uploaded-passports/{safe_app_filename}"
+                        elif row[5]:
+                            passport_url = f"data:image/jpeg;base64,{row[5]}"
         except Exception as e:
             print(f"Dashboard lookup error: {str(e)}")
 
@@ -422,7 +390,7 @@ async def serve_student_dashboard_view(
             "application_id": app_id or "Not Provided",
             "first_name": first_name,
             "last_name": last_name,
-            "current_class": current_class,
+            "current_class": target_class,
             "admission_status": screening_status,
             "screening_score": screening_score,
             "passport_url": passport_url,
@@ -433,20 +401,18 @@ async def serve_student_dashboard_view(
 # ==========================================
 #  🔍 STUDENT LOOKUP ENDPOINT
 # ==========================================
-
-
 @app.get("/api/v1/student/{app_id:path}")
 async def get_student_details(app_id: str):
     clean_app_id = app_id.strip()
     try:
-        with pyodbc.connect(DB_CONN_STR) as conn:
+        with psycopg2.connect(SUPABASE_DB_URI) as conn:
             with conn.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT ApplicationID, FirstName, LastName, CurrentClass, ScreeningStatus, ScreeningScore
-                    FROM [SchoolManagementDB].[dbo].[Students]
-                    WHERE UPPER(LTRIM(RTRIM(ApplicationID))) = UPPER(?)
-                """,
+                    SELECT application_id, first_name, last_name, target_class, screening_status, screening_score
+                    FROM public.cloud_students_staging
+                    WHERE UPPER(TRIM(application_id)) = UPPER(%s)
+                    """,
                     (clean_app_id,),
                 )
                 row = cursor.fetchone()
@@ -460,12 +426,8 @@ async def get_student_details(app_id: str):
                     "first_name": str(row[1]).strip(),
                     "last_name": str(row[2]).strip(),
                     "current_class": str(row[3]).strip(),
-                    "screening_status": (
-                        str(row[4]).strip() if row[4] else "Pending"
-                    ),
-                    "screening_score": (
-                        row[5] if row[5] is not None else 0
-                    ),
+                    "screening_status": str(row[4]).strip() if row[4] else "Pending",
+                    "screening_score": row[5] if row[5] is not None else 0,
                 }
     except Exception as e:
         raise HTTPException(
@@ -476,15 +438,10 @@ async def get_student_details(app_id: str):
 # ==========================================
 #  🔄 SCREENING EXERCISE SYNC ENDPOINT
 # ==========================================
-
-
-@app.post(
-    "/api/v1/sync/screening-result", status_code=status.HTTP_200_OK
-)
+@app.post("/api/v1/sync/screening-result", status_code=status.HTTP_200_OK)
 async def update_student_screening_result(
     payload: ScreeningUpdatePayload, request: Request
 ):
-    # Flexible Header API Key validation
     api_key = request.headers.get("x-api-key") or request.headers.get("X-API-KEY")
     if api_key and api_key != "hysuk_sync_token_2026":
         raise HTTPException(
@@ -502,16 +459,27 @@ async def update_student_screening_result(
     cutoff = payload.final_cutoff
     determined_status = "Passed" if score >= cutoff else "Failed"
 
-    print("\n==========================================")
-    print(
-        f"--> [SYNC RECEIVED] AppID: '{clean_app_id}' | Score: {score} | "
-        f"Cutoff: {cutoff} | Status: {determined_status}"
-    )
-
     local_ok = False
     cloud_ok = False
 
-    # 1. Update Local SQL Server
+    # 1. Update Supabase Cloud DB (Primary Cloud Persistence)
+    try:
+        with psycopg2.connect(SUPABASE_DB_URI) as conn_cloud:
+            with conn_cloud.cursor() as cursor_cloud:
+                cursor_cloud.execute(
+                    """
+                    UPDATE public.cloud_students_staging
+                    SET screening_score = %s, cutoff_mark = %s, screening_status = %s
+                    WHERE UPPER(TRIM(application_id)) = UPPER(%s);
+                    """,
+                    (score, cutoff, determined_status, clean_app_id),
+                )
+                conn_cloud.commit()
+                cloud_ok = True
+    except Exception as e:
+        print(f"--> [SUPABASE CLOUD ERROR]: {str(e)}")
+
+    # 2. Update Local SQL Server (If local DB server is accessible)
     try:
         with pyodbc.connect(DB_CONN_STR) as conn:
             with conn.cursor() as cursor:
@@ -520,44 +488,22 @@ async def update_student_screening_result(
                     UPDATE [SchoolManagementDB].[dbo].[Students]
                     SET ScreeningScore = ?, ExamScore = ?, ScreeningStatus = ?
                     WHERE UPPER(LTRIM(RTRIM(ApplicationID))) = UPPER(?)
-                """,
+                    """,
                     (score, score, determined_status, clean_app_id),
                 )
                 conn.commit()
                 local_ok = True
-                print("--> [LOCAL SQL SERVER] Sync SUCCESS")
     except Exception as e:
-        print(f"--> [LOCAL SQL SERVER ERROR]: {str(e)}")
+        print(f"--> [LOCAL SQL SERVER ERROR (Expected on Cloud Host)]: {str(e)}")
 
-    # 2. Update Supabase Cloud DB
-    try:
-        conn_cloud = psycopg2.connect(SUPABASE_DB_URI)
-        cursor_cloud = conn_cloud.cursor()
-        cursor_cloud.execute(
-            """
-            UPDATE public.cloud_students_staging
-            SET screening_score = %s, cutoff_mark = %s, screening_status = %s
-            WHERE UPPER(LTRIM(RTRIM(application_id))) = UPPER(%s);
-        """,
-            (score, cutoff, determined_status, clean_app_id),
-        )
-        conn_cloud.commit()
-        cursor_cloud.close()
-        conn_cloud.close()
-        cloud_ok = True
-        print("--> [SUPABASE CLOUD] Sync SUCCESS")
-    except Exception as e:
-        print(f"--> [SUPABASE CLOUD ERROR]: {str(e)}")
-
-    print("==========================================\n")
-
-    if local_ok or cloud_ok:
+    if cloud_ok or local_ok:
         return {
             "status": "success",
             "message": f"Screening result updated to {determined_status}",
             "application_id": clean_app_id,
             "screening_status": determined_status,
             "cloud_synced": cloud_ok,
+            "local_synced": local_ok,
         }
 
     raise HTTPException(
@@ -569,8 +515,6 @@ async def update_student_screening_result(
 # ==========================================
 #  🚀 LAUNCHER
 # ==========================================
-
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
