@@ -401,13 +401,13 @@ async def serve_student_dashboard_view(
             "application_id": app_id or "Not Provided",
             "first_name": first_name,
             "last_name": last_name,
-            "current_class": target_class,       # Ensure this aligns with your HTML Jinja parameter
+            "current_class": target_class,  # Supports {{ current_class }} in HTML
+            "target_class": target_class,   # Also supports {{ target_class }} in HTML to prevent "undefined"
             "admission_status": screening_status,
             "screening_score": screening_score,
             "passport_url": passport_url,
         },
     )
-
 
 # ==========================================
 #  🔍 STUDENT LOOKUP ENDPOINT
