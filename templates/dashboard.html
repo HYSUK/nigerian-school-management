@@ -302,17 +302,18 @@
 
     async function fetchFreshServerMetrics() {
         try {
-            // Encode slashes dynamically in the path safely (e.g. JS/2026/D121F)
             const safeAppIdPath = encodeURIComponent(cachedAppId.trim()); 
             const response = await fetch(`${API_BASE}/student/${safeAppIdPath}`);
             if (!response.ok) throw new Error("Sync node cluster rejected request.");
             const res = await response.json();
             
-            // Handle response whether wrapped in { success: true, data: ... } or raw student object
             const studentData = res.data ? res.data : res;
             populateDashboardLayout(studentData);
         } catch (err) {
             console.error("Using offline cache local view fallback mode:", err);
+            // Operational network fallback safety hook:
+            // We deliberately do not clear out or call any image hiding routines here, 
+            // allowing pre-loaded local DOM images to remain active.
         }
     }
 
@@ -475,14 +476,18 @@
     }
 
     function handleImageFallback(imgElement) {
-        imgElement.classList.add('hidden');
-        if (imgElement.id === 'sidebarAvatar') {
-            if (document.getElementById('sidebarPlaceholder')) document.getElementById('sidebarPlaceholder').classList.remove('hidden');
-        } else if (imgElement.id === 'slipAvatar') {
-            if (document.getElementById('slipAvatarPlaceholder')) document.getElementById('slipAvatarPlaceholder').classList.remove('hidden');
-        } else {
-            if (document.getElementById('topBannerPlaceholder')) document.getElementById('topBannerPlaceholder').classList.remove('hidden');
-        }
+        // Prevent hiding images instantly due to asynchronous pipeline latency updates
+        console.warn(`Resource signature note for element allocation: #${imgElement.id}`);
+        
+        // If an asset path genuinely doesn't exist, un-comment the lines below to enforce placeholders:
+        // imgElement.classList.add('hidden');
+        // if (imgElement.id === 'sidebarAvatar') {
+        //     if (document.getElementById('sidebarPlaceholder')) document.getElementById('sidebarPlaceholder').classList.remove('hidden');
+        // } else if (imgElement.id === 'slipAvatar') {
+        //     if (document.getElementById('slipAvatarPlaceholder')) document.getElementById('slipAvatarPlaceholder').classList.remove('hidden');
+        // } else {
+        //     if (document.getElementById('topBannerPlaceholder')) document.getElementById('topBannerPlaceholder').classList.remove('hidden');
+        // }
     }
 
     // Mobile Sidebar UI Interactions
