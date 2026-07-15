@@ -1,478 +1,366 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Portal - Dashboard Cockpit</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    
-    <style>
-        /* Print Stylesheet: Shows only the Registration Slip when printing */
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            #printableRegistrationSlip, #printableRegistrationSlip * {
-                visibility: visible;
-            }
-            #printableRegistrationSlip {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 20px;
-                background: white !important;
-                color: black !important;
-            }
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - Dashboard Cockpit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-800 flex flex-col md:flex-row antialiased">
 
-    <header class="md:hidden bg-slate-900 text-white px-4 py-3 flex items-center justify-between border-b border-slate-800 shadow-md sticky top-0 z-50">
-        <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white text-base font-bold shadow-md shadow-emerald-900/30">
-                <i class="fa-solid fa-graduation-cap"></i>
-            </div>
-            <div>
-                <h2 class="text-white font-bold text-xs tracking-wide">School Portal</h2>
-                <p class="text-[9px] text-slate-400 font-semibold tracking-wider uppercase">Hybrid Sync Node</p>
-            </div>
-        </div>
-        <button onclick="toggleMobileMenu()" class="w-9 h-9 flex items-center justify-center bg-slate-800 rounded-lg text-slate-300 hover:text-white focus:outline-none">
-            <i id="mobileMenuIcon" class="fa-solid fa-bars text-lg"></i>
-        </button>
-    </header>
+    <header class="md:hidden bg-slate-900 text-white px-4 py-3 flex items-center justify-between border-b border-slate-800 shadow-md sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white text-base font-bold shadow-md shadow-emerald-900/30">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <div>
+                <h2 class="text-white font-bold text-xs tracking-wide">School Portal</h2>
+                <p class="text-[9px] text-slate-400 font-semibold tracking-wider uppercase">Hybrid Sync Node</p>
+            </div>
+        </div>
+        <button onclick="toggleMobileMenu()" class="w-9 h-9 flex items-center justify-center bg-slate-800 rounded-lg text-slate-300 hover:text-white focus:outline-none">
+            <i id="mobileMenuIcon" class="fa-solid fa-bars text-lg"></i>
+        </button>
+    </header>
 
-    <aside id="sidebarPanel" class="hidden md:flex w-full md:w-64 bg-slate-900 text-slate-300 flex-shrink-0 flex-col border-r border-slate-800 fixed md:sticky top-[53px] md:top-0 h-[calc(100vh-53px)] md:h-screen z-40 transition-all duration-300 overflow-y-auto">
-        <div class="hidden md:flex p-5 bg-slate-950 border-b border-slate-800/60 items-center space-x-3">
-            <div class="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center text-white text-base font-bold shadow-md shadow-emerald-600/20">
-                <i class="fa-solid fa-graduation-cap"></i>
-            </div>
-            <div>
-                <h2 class="text-white font-bold text-sm tracking-wide">School Portal</h2>
-                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Hybrid Sync Node</p>
-            </div>
-        </div>
+    <aside id="sidebarPanel" class="hidden md:flex w-full md:w-64 bg-slate-900 text-slate-300 flex-shrink-0 flex-col border-r border-slate-800 fixed md:sticky top-[53px] md:top-0 h-[calc(100vh-53px)] md:h-screen z-40 transition-all duration-300 overflow-y-auto">
+        <div class="hidden md:flex p-5 bg-slate-950 border-b border-slate-800/60 items-center space-x-3">
+            <div class="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center text-white text-base font-bold shadow-md shadow-emerald-600/20">
+                <i class="fa-solid fa-graduation-cap"></i>
+            </div>
+            <div>
+                <h2 class="text-white font-bold text-sm tracking-wide">School Portal</h2>
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Hybrid Sync Node</p>
+            </div>
+        </div>
 
-        <nav class="flex-1 p-4 space-y-1.5">
-            <button onclick="switchView('gateway')" id="menu_gateway" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition bg-slate-800 text-white shadow-sm shadow-slate-950/20">
-                <i class="fa-solid fa-chart-pie text-base w-5 text-center text-emerald-500"></i><span>Status Gateway</span>
-            </button>
-            <button onclick="switchView('slip')" id="menu_slip" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-400 hover:bg-slate-800/40 hover:text-slate-200">
-                <i class="fa-solid fa-id-card text-base w-5 text-center text-teal-400"></i><span>Registration Slip</span>
-            </button>
-            <button onclick="switchView('letter')" id="menu_letter" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-400 hover:bg-slate-800/40 hover:text-slate-200">
-                <i class="fa-solid fa-file-invoice text-base w-5 text-center"></i><span>Admission Letter</span>
-            </button>
-            
-            <div class="h-px bg-slate-800/60 my-4 mx-2"></div>
-            
-            <button onclick="handleLogout()" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-rose-400 hover:bg-rose-950/20 hover:text-rose-300">
-                <i class="fa-solid fa-power-off text-base w-5 text-center"></i><span>Secure Logout</span>
-            </button>
-        </nav>
+        <nav class="flex-1 p-4 space-y-1.5">
+            <button onclick="switchView('gateway')" id="menu_gateway" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition bg-slate-800 text-white shadow-sm shadow-slate-950/20">
+                <i class="fa-solid fa-chart-pie text-base w-5 text-center text-emerald-500"></i><span>Status Gateway</span>
+            </button>
+            <button onclick="switchView('letter')" id="menu_letter" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-400 hover:bg-slate-800/40 hover:text-slate-200">
+                <i class="fa-solid fa-file-invoice text-base w-5 text-center"></i><span>Admission Letter</span>
+            </button>
+            
+            <div class="h-px bg-slate-800/60 my-4 mx-2"></div>
+            
+            <button onclick="handleLogout()" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-rose-400 hover:bg-rose-950/20 hover:text-rose-300">
+                <i class="fa-solid fa-power-off text-base w-5 text-center"></i><span>Secure Logout</span>
+            </button>
+        </nav>
 
-        <div class="p-4 bg-slate-950/40 border-t border-slate-800/80 flex items-center space-x-3 text-xs mt-auto">
-            <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/60 overflow-hidden flex-shrink-0 relative shadow-inner">
-                <img id="sidebarAvatar" src="{{ passport_url }}" class="w-full h-full object-cover {% if passport_url == 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop' %}hidden{% endif %}" onerror="handleImageFallback(this)">
-                <div id="sidebarPlaceholder" class="w-full h-full flex items-center justify-center text-slate-400 font-bold {% if passport_url != 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop' %}hidden{% endif %}"><i class="fa-solid fa-user"></i></div>
-            </div>
-            <div class="truncate">
-                <p class="text-slate-200 font-bold tracking-wide truncate" id="sidebarStudentName">{{ first_name }} {{ last_name }}</p>
-                <p class="text-[10px] text-slate-500 font-mono tracking-wider truncate" id="sidebarAppId">{{ application_id }}</p>
-            </div>
-        </div>
-    </aside>
+        <div class="p-4 bg-slate-950/40 border-t border-slate-800/80 flex items-center space-x-3 text-xs mt-auto">
+            <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700/60 overflow-hidden flex-shrink-0 relative shadow-inner">
+                <img id="sidebarAvatar" src="{{ passport_url }}" class="w-full h-full object-cover {% if passport_url == 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop' %}hidden{% endif %}" onerror="handleImageFallback(this)">
+                <div id="sidebarPlaceholder" class="w-full h-full flex items-center justify-center text-slate-400 font-bold {% if passport_url != 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop' %}hidden{% endif %}"><i class="fa-solid fa-user"></i></div>
+            </div>
+            <div class="truncate">
+                <p class="text-slate-200 font-bold tracking-wide truncate" id="sidebarStudentName">{{ first_name }} {{ last_name }}</p>
+                <p class="text-[10px] text-slate-500 font-mono tracking-wider truncate" id="sidebarAppId">{{ application_id }}</p>
+            </div>
+        </div>
+    </aside>
 
-    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        
-        <header class="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm z-10">
-            <div class="flex items-center space-x-4">
-                <div class="w-14 h-14 bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden shadow-inner flex-shrink-0 relative">
-                    <img id="topBannerAvatar" src="{{ passport_url }}" class="w-full h-full object-cover {% if passport_url == 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop' %}hidden{% endif %}" onerror="handleImageFallback(this)">
-                    <div id="topBannerPlaceholder" class="w-full h-full flex items-center justify-center text-slate-400 text-lg {% if passport_url != 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop' %}hidden{% endif %}"><i class="fa-solid fa-user-graduate"></i></div>
-                </div>
-                <div>
-                    <h1 class="text-base font-extrabold text-slate-900 tracking-tight sm:text-lg" id="topBannerStudentName">{{ first_name }} {{ last_name }}</h1>
-                    <p class="text-xs text-slate-500 font-medium">Class Framework Designation: <span id="topBannerClass" class="font-bold text-slate-700">{{ current_class }}</span></p>
-                </div>
-            </div>
-            
-            <div id="topBannerBadge" class="self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase
-                {% if 'Passed' in admission_status or 'Approved' in admission_status or 'Imported' in admission_status %}
-                    bg-emerald-100 text-emerald-800 border border-emerald-200
-                {% elif 'Failed' in admission_status %}
-                    bg-rose-100 text-rose-800 border border-rose-200
-                {% else %}
-                    bg-amber-100 text-amber-800 border border-amber-200 animate-pulse
-                {% endif %}">
-                {% if 'Passed' in admission_status or 'Approved' in admission_status or 'Imported' in admission_status %}
-                    Approved & Synced
-                {% elif 'Failed' in admission_status %}
-                    Admission Declined
-                {% else %}
-                    Awaiting Screening
-                {% endif %}
-            </div>
-        </header>
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        
+        <header class="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm z-10">
+            <div class="flex items-center space-x-4">
+                <div class="w-14 h-14 bg-slate-100 rounded-2xl border border-slate-200 overflow-hidden shadow-inner flex-shrink-0 relative">
+                    <img id="topBannerAvatar" src="{{ passport_url }}" class="w-full h-full object-cover {% if passport_url == 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop' %}hidden{% endif %}" onerror="handleImageFallback(this)">
+                    <div id="topBannerPlaceholder" class="w-full h-full flex items-center justify-center text-slate-400 text-lg {% if passport_url != 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop' %}hidden{% endif %}"><i class="fa-solid fa-user-graduate"></i></div>
+                </div>
+                <div>
+                    <h1 class="text-base font-extrabold text-slate-900 tracking-tight sm:text-lg" id="topBannerStudentName">{{ first_name }} {{ last_name }}</h1>
+                    <p class="text-xs text-slate-500 font-medium">Class Framework Designation: <span id="topBannerClass" class="font-bold text-slate-700">{{ current_class }}</span></p>
+                </div>
+            </div>
+            
+            <div id="topBannerBadge" class="self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase
+                {% if 'Passed' in admission_status or 'Approved' in admission_status or 'Imported' in admission_status %}
+                    bg-emerald-100 text-emerald-800 border border-emerald-200
+                {% elif 'Failed' in admission_status %}
+                    bg-rose-100 text-rose-800 border border-rose-200
+                {% else %}
+                    bg-amber-100 text-amber-800 border border-amber-200 animate-pulse
+                {% endif %}">
+                {% if 'Passed' in admission_status or 'Approved' in admission_status or 'Imported' in admission_status %}
+                    Approved & Synced
+                {% elif 'Failed' in admission_status %}
+                    Admission Declined
+                {% else %}
+                    Awaiting Screening
+                {% endif %}
+            </div>
+        </header>
 
-        <div class="p-4 sm:p-6 max-w-4xl w-full mx-auto flex-1">
-            <div id="dashboardAlert" class="hidden mb-6 p-4 rounded-xl text-sm font-medium border animate-pulse"></div>
+        <div class="p-4 sm:p-6 max-w-4xl w-full mx-auto flex-1">
+            <div id="dashboardAlert" class="hidden mb-6 p-4 rounded-xl text-sm font-medium border animate-pulse"></div>
 
-            <section id="panel_gateway" class="space-y-6">
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-5 flex items-center gap-2">
-                        <i class="fa-solid fa-address-card text-emerald-600 text-sm"></i> Official Admission Verification Profile
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-12 text-sm">
-                        <div class="flex justify-between items-center py-2.5 border-b border-slate-100 min-w-0">
-                            <span class="text-slate-500 font-medium flex-shrink-0 mr-4">Application ID</span>
-                            <span class="font-mono font-bold text-slate-900 uppercase truncate" id="cardAppId">{{ application_id }}</span>
-                        </div>
-                        <div class="flex justify-between items-center py-2.5 border-b border-slate-100 min-w-0">
-                            <span class="text-slate-500 font-medium flex-shrink-0 mr-4">First Name</span>
-                            <span class="font-bold text-slate-900 truncate" id="cardFirstName">{{ first_name }}</span>
-                        </div>
-                        <div class="flex justify-between items-center py-2.5 border-b border-slate-100 min-w-0">
-                            <span class="text-slate-500 font-medium flex-shrink-0 mr-4">Last Name</span>
-                            <span class="font-bold text-slate-900 truncate" id="cardLastName">{{ last_name }}</span>
-                        </div>
-                        <div class="flex justify-between items-center py-2.5 border-b border-slate-100 min-w-0">
-                            <span class="text-slate-500 font-medium flex-shrink-0 mr-4">Target Class</span>
-                            <span class="font-bold text-emerald-600 truncate" id="cardClass">{{ current_class }}</span>
-                        </div>
-                        <div class="flex justify-between items-center py-2.5 border-b border-slate-100 min-w-0">
-                            <span class="text-slate-500 font-medium flex-shrink-0 mr-4">Screening Score</span>
-                            <span class="font-extrabold text-slate-900 truncate" id="cardScreeningScore">{{ screening_score if screening_score else 'N/A' }}</span>
-                        </div>
-                        <div class="flex justify-between items-center py-2.5 border-b border-slate-100 min-w-0">
-                            <span class="text-slate-500 font-medium flex-shrink-0 mr-4">Screening Decision</span>
-                            <span class="font-bold uppercase truncate" id="cardScreeningStatus">
-                                {{ admission_status }}
-                            </span>
-                        </div>
-                    </div>
+            <section id="panel_gateway" class="space-y-6">
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-5 flex items-center gap-2">
+                        <i class="fa-solid fa-address-card text-emerald-600 text-sm"></i> Official Admission Verification Profile
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-12 text-sm">
+                        <div class="flex justify-between items-center py-2.5 border-b border-slate-100 min-w-0">
+                            <span class="text-slate-500 font-medium flex-shrink-0 mr-4">Application ID</span>
+                            <span class="font-mono font-bold text-slate-900 uppercase truncate" id="cardAppId">{{ application_id }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2.5 border-b border-slate-100 min-w-0">
+                            <span class="text-slate-500 font-medium flex-shrink-0 mr-4">First Name</span>
+                            <span class="font-bold text-slate-900 truncate" id="cardFirstName">{{ first_name }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2.5 border-b border-slate-100 min-w-0">
+                            <span class="text-slate-500 font-medium flex-shrink-0 mr-4">Last Name</span>
+                            <span class="font-bold text-slate-900 truncate" id="cardLastName">{{ last_name }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2.5 border-b border-slate-100 min-w-0">
+                            <span class="text-slate-500 font-medium flex-shrink-0 mr-4">Target Class</span>
+                            <span class="font-bold text-emerald-600 truncate" id="cardClass">{{ current_class }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2.5 border-b border-slate-100 min-w-0">
+                            <span class="text-slate-500 font-medium flex-shrink-0 mr-4">Screening Score</span>
+                            <span class="font-extrabold text-slate-900 truncate" id="cardScreeningScore">{{ screening_score if screening_score else 'N/A' }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2.5 border-b border-slate-100 min-w-0">
+                            <span class="text-slate-500 font-medium flex-shrink-0 mr-4">Screening Decision</span>
+                            <span class="font-bold uppercase truncate" id="cardScreeningStatus">
+                                {{ admission_status }}
+                            </span>
+                        </div>
+                    </div>
 
-                    <div id="screeningExplainBox" class="mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-slate-200 bg-slate-50">
-                        <i id="screeningExplainIcon" class="fa-solid fa-circle-nodes text-base text-emerald-600 mt-0.5 flex-shrink-0"></i>
-                        <div class="space-y-1">
-                            <p class="font-bold text-slate-800" id="screeningExplainTitle">What does your current screening status mean?</p>
-                            <p class="text-slate-600 leading-relaxed" id="screeningExplainText">
-                                Once the school administration syncs their offline JavaFX database terminal with the centralized cloud service layer, your operational state will lock into approved or failed mode automatically.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
+                    <div id="screeningExplainBox" class="mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-slate-200 bg-slate-50">
+                        <i id="screeningExplainIcon" class="fa-solid fa-circle-nodes text-base text-emerald-600 mt-0.5 flex-shrink-0"></i>
+                        <div class="space-y-1">
+                            <p class="font-bold text-slate-800" id="screeningExplainTitle">What does your current screening status mean?</p>
+                            <p class="text-slate-600 leading-relaxed" id="screeningExplainText">
+                                Once the school administration syncs their offline JavaFX database terminal with the centralized cloud service layer, your operational state will lock into approved or failed mode automatically.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-            <section id="panel_slip" class="hidden space-y-6">
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-4">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl border border-teal-100 flex items-center justify-center text-lg shadow-sm">
-                                <i class="fa-solid fa-print"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-sm font-extrabold text-slate-900 tracking-tight sm:text-base">Student Registration Slip</h3>
-                                <p class="text-xs text-slate-400">Verifiable Portal Slip Documentation</p>
-                            </div>
-                        </div>
-                        
-                        <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl transition text-xs inline-flex items-center justify-center space-x-2 shadow-md shadow-emerald-900/10">
-                            <i class="fa-solid fa-print"></i>
-                            <span>Print Registration Slip</span>
-                        </button>
-                    </div>
+            <section id="panel_letter" class="hidden space-y-6">
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                    <div class="flex items-center space-x-3 border-b border-slate-100 pb-4">
+                        <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl border border-amber-100 flex items-center justify-center text-lg shadow-sm">
+                            <i class="fa-solid fa-file-pdf"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-extrabold text-slate-900 tracking-tight sm:text-base">Official Screening Admission Clearance Letter</h3>
+                            <p class="text-xs text-slate-400">Verifiable high-fidelity PDF Document format</p>
+                        </div>
+                    </div>
+                    
+                    <p id="letterDescription" class="text-sm text-slate-600 leading-relaxed">
+                        If your status shows as approved, you can download your official letter using the secure download link below. Print this letter out and present it at the administrative center to complete your physical verification.
+                    </p>
+                    
+                    <div class="pt-3" id="letterActionContainer">
+                        <button onclick="downloadAdmissionLetter()" id="btnDownloadLetter" class="bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white font-semibold px-6 py-3 rounded-xl transition text-sm inline-flex items-center space-x-2.5 shadow-md shadow-slate-900/10 focus:outline-none">
+                            <i class="fa-solid fa-download text-xs"></i><span>Download Document (PDF)</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
 
-                    <div id="printableRegistrationSlip" class="border-2 border-slate-900 p-6 sm:p-8 rounded-xl bg-white space-y-6">
-                        <div class="flex items-center justify-between border-b-2 border-slate-900 pb-4">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-12 h-12 bg-slate-900 text-white rounded-lg flex items-center justify-center font-bold text-xl">
-                                    <i class="fa-solid fa-graduation-cap"></i>
-                                </div>
-                                <div>
-                                    <h2 class="text-lg font-black uppercase tracking-wider text-slate-900">Official Registration Slip</h2>
-                                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Student Academic Portal</p>
-                                </div>
-                            </div>
-                            <div class="text-right text-xs">
-                                <span class="block text-slate-400 font-mono text-[10px]">APPLICATION ID</span>
-                                <span class="font-mono font-bold text-slate-900" id="slipAppId">{{ application_id }}</span>
-                            </div>
-                        </div>
+        </div>
+    </main>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                            <div class="flex flex-col items-center justify-center p-2 border border-slate-200 rounded-xl bg-slate-50">
-                                <img id="slipAvatar" src="{{ passport_url }}" class="w-28 h-28 object-cover rounded-lg border shadow-sm {% if passport_url == 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop' %}hidden{% endif %}" onerror="handleImageFallback(this)">
-                                <div id="slipAvatarPlaceholder" class="w-28 h-28 flex items-center justify-center bg-slate-200 text-slate-400 rounded-lg text-3xl {% if passport_url != 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop' %}hidden{% endif %}">
-                                    <i class="fa-solid fa-user"></i>
-                                </div>
-                            </div>
+    <script>
+        const API_BASE = "/api/v1";
+        let cachedAppId = null;
 
-                            <div class="sm:col-span-2 grid grid-cols-2 gap-4 text-xs">
-                                <div>
-                                    <span class="block text-slate-400 font-bold uppercase text-[9px]">First Name</span>
-                                    <span class="font-bold text-slate-800 text-sm" id="slipFirstName">{{ first_name }}</span>
-                                </div>
-                                <div>
-                                    <span class="block text-slate-400 font-bold uppercase text-[9px]">Last Name</span>
-                                    <span class="font-bold text-slate-800 text-sm" id="slipLastName">{{ last_name }}</span>
-                                </div>
-                                <div>
-                                    <span class="block text-slate-400 font-bold uppercase text-[9px]">Target Class Tier</span>
-                                    <span class="font-bold text-emerald-700 text-sm" id="slipClass">{{ current_class }}</span>
-                                </div>
-                                <div>
-                                    <span class="block text-slate-400 font-bold uppercase text-[9px]">Status</span>
-                                    <span class="font-bold text-slate-800 uppercase" id="slipStatus">{{ admission_status }}</span>
-                                </div>
-                            </div>
-                        </div>
+        window.addEventListener('DOMContentLoaded', () => {
+            const serverAppId = "{{ application_id }}";
+            
+            if(serverAppId && serverAppId !== "Not Provided") {
+                cachedAppId = serverAppId;
+                localStorage.setItem('portal_app_id', cachedAppId);
+            } else {
+                cachedAppId = localStorage.getItem('portal_app_id');
+            }
 
-                        <div class="border-t border-slate-200 pt-4 text-[11px] text-slate-500 flex justify-between items-center">
-                            <span>Status: Verification Complete</span>
-                            <span class="font-mono">Printed via Student Cockpit Node</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            if(!cachedAppId) {
+                window.location.href = "/home";
+                return;
+            }
+            
+            fetchFreshServerMetrics();
+        });
 
-            <section id="panel_letter" class="hidden space-y-6">
-                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-                    <div class="flex items-center space-x-3 border-b border-slate-100 pb-4">
-                        <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl border border-amber-100 flex items-center justify-center text-lg shadow-sm">
-                            <i class="fa-solid fa-file-pdf"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-extrabold text-slate-900 tracking-tight sm:text-base">Official Screening Admission Clearance Letter</h3>
-                            <p class="text-xs text-slate-400">Verifiable high-fidelity PDF Document format</p>
-                        </div>
-                    </div>
-                    
-                    <p id="letterDescription" class="text-sm text-slate-600 leading-relaxed">
-                        If your status shows as approved, you can download your official letter using the secure download link below. Print this letter out and present it at the administrative center to complete your physical verification.
-                    </p>
-                    
-                    <div class="pt-3" id="letterActionContainer">
-                        <button onclick="downloadAdmissionLetter()" id="btnDownloadLetter" class="bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white font-semibold px-6 py-3 rounded-xl transition text-sm inline-flex items-center space-x-2.5 shadow-md shadow-slate-900/10 focus:outline-none">
-                            <i class="fa-solid fa-download text-xs"></i><span>Download Document (PDF)</span>
-                        </button>
-                    </div>
-                </div>
-            </section>
+        async function fetchFreshServerMetrics() {
+            try {
+                const safeAppIdPath = cachedAppId.trim(); 
+                const response = await fetch(`${API_BASE}/student/${safeAppIdPath}`);
+                if (!response.ok) throw new Error("Sync node cluster rejected request.");
+                const res = await response.json();
+                
+                if (res.success) {
+                    populateDashboardLayout(res);
+                }
+            } catch (err) {
+                console.error("Using offline cache local view fallback mode:", err);
+            }
+        }
 
-        </div>
-    </main>
+        function populateDashboardLayout(data) {
+            const combinedName = `${data.first_name} ${data.last_name}`;
+            const status = data.admission_status || "Awaiting Academic Screening";
+            
+            document.getElementById('topBannerStudentName').innerText = combinedName;
+            document.getElementById('sidebarStudentName').innerText = combinedName;
+            document.getElementById('topBannerClass').innerText = data.target_class;
+            
+            document.getElementById('sidebarAppId').innerText = data.application_id;
+            document.getElementById('cardAppId').innerText = data.application_id;
+            document.getElementById('cardFirstName').innerText = data.first_name;
+            document.getElementById('cardLastName').innerText = data.last_name;
+            document.getElementById('cardClass').innerText = data.target_class;
+            
+            if (document.getElementById('cardScreeningScore') && data.screening_score !== undefined) {
+                document.getElementById('cardScreeningScore').innerText = data.screening_score + "%";
+            }
+            document.getElementById('cardScreeningStatus').innerText = status;
 
-    <script>
-        const API_BASE = "/api/v1";
-        let cachedAppId = null;
+            // Passport Avatar Loader
+            if (data.passport_url) {
+                const navAvatar = document.getElementById('sidebarAvatar');
+                const bannerAvatar = document.getElementById('topBannerAvatar');
+                
+                let cleanUrl = data.passport_url;
+                if (cleanUrl.includes('/uploaded-passports/')) {
+                    cleanUrl = '/uploaded-passports/' + cleanUrl.split('/uploaded-passports/')[1];
+                }
+                
+                navAvatar.src = cleanUrl;
+                bannerAvatar.src = cleanUrl;
+                
+                navAvatar.classList.remove('hidden');
+                bannerAvatar.classList.remove('hidden');
+                document.getElementById('sidebarPlaceholder').classList.add('hidden');
+                document.getElementById('topBannerPlaceholder').classList.add('hidden');
+            }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            const serverAppId = "{{ application_id }}";
-            
-            if(serverAppId && serverAppId !== "Not Provided") {
-                cachedAppId = serverAppId;
-                localStorage.setItem('portal_app_id', cachedAppId);
-            } else {
-                cachedAppId = localStorage.getItem('portal_app_id');
-            }
+            // Sync Badge & Screening Decision Logic
+            const badge = document.getElementById('topBannerBadge');
+            const explainBox = document.getElementById('screeningExplainBox');
+            const explainIcon = document.getElementById('screeningExplainIcon');
+            const explainTitle = document.getElementById('screeningExplainTitle');
+            const explainText = document.getElementById('screeningExplainText');
+            const downloadBtn = document.getElementById('btnDownloadLetter');
+            const letterDesc = document.getElementById('letterDescription');
 
-            if(!cachedAppId) {
-                window.location.href = "/home";
-                return;
-            }
-            
-            fetchFreshServerMetrics();
-        });
+            if (status.includes("Passed") || status.includes("Approved") || status.includes("Imported")) {
+                // PASSED / APPROVED STATE
+                badge.innerText = "Approved & Synced";
+                badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-emerald-100 text-emerald-800 border border-emerald-200";
+                
+                explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-emerald-200 bg-emerald-50/50";
+                explainIcon.className = "fa-solid fa-circle-check text-base text-emerald-600 mt-0.5 flex-shrink-0";
+                explainTitle.innerText = "🎉 Congratulations! Admission Clearance Granted";
+                explainText.innerText = "You have met the cutoff mark for your selected class. Your clearance slip is ready for immediate printing.";
+                
+                if (downloadBtn) {
+                    downloadBtn.disabled = false;
+                    downloadBtn.className = "bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-xl transition text-sm inline-flex items-center space-x-2.5 shadow-md shadow-emerald-900/10 cursor-pointer";
+                    downloadBtn.innerHTML = `<i class="fa-solid fa-download text-xs"></i><span>Print/Download Admission Slip</span>`;
+                }
 
-        async function fetchFreshServerMetrics() {
-            try {
-                const safeAppIdPath = cachedAppId.trim(); 
-                const response = await fetch(`${API_BASE}/student/${safeAppIdPath}`);
-                if (!response.ok) throw new Error("Sync node cluster rejected request.");
-                const res = await response.json();
-                
-                if (res.success) {
-                    populateDashboardLayout(res);
-                }
-            } catch (err) {
-                console.error("Using offline cache local view fallback mode:", err);
-            }
-        }
+            } else if (status.includes("Failed")) {
+                // FAILED STATE
+                badge.innerText = "Admission Declined";
+                badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-rose-100 text-rose-800 border border-rose-200";
+                
+                explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-rose-200 bg-rose-50/50";
+                explainIcon.className = "fa-solid fa-circle-xmark text-base text-rose-600 mt-0.5 flex-shrink-0";
+                explainTitle.innerText = "❌ Screening Score Below Required Cutoff";
+                explainText.innerText = "Unfortunately, your score did not meet the required threshold for admission into " + data.target_class + ". Printing of the admission slip has been locked.";
+                
+                if (downloadBtn) {
+                    downloadBtn.disabled = true;
+                    downloadBtn.className = "bg-slate-300 text-slate-500 font-semibold px-6 py-3 rounded-xl text-sm inline-flex items-center space-x-2.5 cursor-not-allowed border border-slate-300";
+                    downloadBtn.innerHTML = `<i class="fa-solid fa-lock text-xs"></i><span>Clearance Slip Printing Locked</span>`;
+                }
+                if (letterDesc) {
+                    letterDesc.innerText = "Clearance slip printing is restricted because your screening score did not satisfy the institutional threshold for admission.";
+                }
 
-        function populateDashboardLayout(data) {
-            const combinedName = `${data.first_name} ${data.last_name}`;
-            const status = data.admission_status || "Awaiting Academic Screening";
-            
-            document.getElementById('topBannerStudentName').innerText = combinedName;
-            document.getElementById('sidebarStudentName').innerText = combinedName;
-            document.getElementById('topBannerClass').innerText = data.target_class;
-            
-            document.getElementById('sidebarAppId').innerText = data.application_id;
-            document.getElementById('cardAppId').innerText = data.application_id;
-            document.getElementById('cardFirstName').innerText = data.first_name;
-            document.getElementById('cardLastName').innerText = data.last_name;
-            document.getElementById('cardClass').innerText = data.target_class;
+            } else {
+                // AWAITING / PENDING STATE
+                badge.innerText = "Awaiting Screening";
+                badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-amber-100 text-amber-800 border border-amber-200 animate-pulse";
+                
+                explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-amber-200 bg-amber-50/50";
+                explainIcon.className = "fa-solid fa-clock text-base text-amber-600 mt-0.5 flex-shrink-0";
+                explainTitle.innerText = "⏳ Screening Exercise Result Pending";
+                explainText.innerText = "Your screening scores have not been uploaded or synchronized yet. Please check back after the academic screening board concludes evaluation.";
+                
+                if (downloadBtn) {
+                    downloadBtn.disabled = true;
+                    downloadBtn.className = "bg-slate-300 text-slate-500 font-semibold px-6 py-3 rounded-xl text-sm inline-flex items-center space-x-2.5 cursor-not-allowed border border-slate-300";
+                    downloadBtn.innerHTML = `<i class="fa-solid fa-lock text-xs"></i><span>Pending Screening Verification</span>`;
+                }
+            }
+        }
 
-            // Slip fields
-            if (document.getElementById('slipAppId')) document.getElementById('slipAppId').innerText = data.application_id;
-            if (document.getElementById('slipFirstName')) document.getElementById('slipFirstName').innerText = data.first_name;
-            if (document.getElementById('slipLastName')) document.getElementById('slipLastName').innerText = data.last_name;
-            if (document.getElementById('slipClass')) document.getElementById('slipClass').innerText = data.target_class;
-            if (document.getElementById('slipStatus')) document.getElementById('slipStatus').innerText = status;
-            
-            if (document.getElementById('cardScreeningScore') && data.screening_score !== undefined) {
-                document.getElementById('cardScreeningScore').innerText = data.screening_score + "%";
-            }
-            document.getElementById('cardScreeningStatus').innerText = status;
+        function handleImageFallback(imgElement) {
+            imgElement.classList.add('hidden');
+            if(imgElement.id === 'sidebarAvatar') {
+                document.getElementById('sidebarPlaceholder').classList.remove('hidden');
+            } else {
+                document.getElementById('topBannerPlaceholder').classList.remove('hidden');
+            }
+        }
 
-            // Passport Avatar Loader
-            if (data.passport_url) {
-                const navAvatar = document.getElementById('sidebarAvatar');
-                const bannerAvatar = document.getElementById('topBannerAvatar');
-                const slipAvatar = document.getElementById('slipAvatar');
-                
-                let cleanUrl = data.passport_url;
-                if (cleanUrl.includes('/uploaded-passports/')) {
-                    cleanUrl = '/uploaded-passports/' + cleanUrl.split('/uploaded-passports/')[1];
-                }
-                
-                navAvatar.src = cleanUrl;
-                bannerAvatar.src = cleanUrl;
-                if (slipAvatar) slipAvatar.src = cleanUrl;
-                
-                navAvatar.classList.remove('hidden');
-                bannerAvatar.classList.remove('hidden');
-                if (slipAvatar) slipAvatar.classList.remove('hidden');
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebarPanel');
+            const icon = document.getElementById('mobileMenuIcon');
+            
+            if(sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('flex');
+                icon.className = "fa-solid fa-xmark text-lg";
+            } else {
+                sidebar.classList.add('hidden');
+                sidebar.classList.remove('flex');
+                icon.className = "fa-solid fa-bars text-lg";
+            }
+        }
 
-                document.getElementById('sidebarPlaceholder').classList.add('hidden');
-                document.getElementById('topBannerPlaceholder').classList.add('hidden');
-                if (document.getElementById('slipAvatarPlaceholder')) {
-                    document.getElementById('slipAvatarPlaceholder').classList.add('hidden');
-                }
-            }
+        function switchView(targetPanel) {
+            const panels = ['gateway', 'letter'];
+            panels.forEach(p => {
+                const el = document.getElementById(`panel_${p}`);
+                const menuBtn = document.getElementById(`menu_${p}`);
+                
+                if (p === targetPanel) {
+                    el.classList.remove('hidden');
+                    menuBtn.className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition bg-slate-800 text-white shadow-sm shadow-slate-950/20";
+                } else {
+                    el.classList.add('hidden');
+                    menuBtn.className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-400 hover:bg-slate-800/50 hover:text-slate-200";
+                }
+            });
 
-            // Sync Badge & Screening Decision Logic
-            const badge = document.getElementById('topBannerBadge');
-            const explainBox = document.getElementById('screeningExplainBox');
-            const explainIcon = document.getElementById('screeningExplainIcon');
-            const explainTitle = document.getElementById('screeningExplainTitle');
-            const explainText = document.getElementById('screeningExplainText');
-            const downloadBtn = document.getElementById('btnDownloadLetter');
-            const letterDesc = document.getElementById('letterDescription');
+            if(window.innerWidth < 768) {
+                toggleMobileMenu();
+            }
+        }
 
-            if (status.includes("Passed") || status.includes("Approved") || status.includes("Imported")) {
-                badge.innerText = "Approved & Synced";
-                badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-emerald-100 text-emerald-800 border border-emerald-200";
-                
-                explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-emerald-200 bg-emerald-50/50";
-                explainIcon.className = "fa-solid fa-circle-check text-base text-emerald-600 mt-0.5 flex-shrink-0";
-                explainTitle.innerText = "🎉 Congratulations! Admission Clearance Granted";
-                explainText.innerText = "You have met the cutoff mark for your selected class. Your clearance slip is ready for immediate printing.";
-                
-                if (downloadBtn) {
-                    downloadBtn.disabled = false;
-                    downloadBtn.className = "bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-xl transition text-sm inline-flex items-center space-x-2.5 shadow-md shadow-emerald-900/10 cursor-pointer";
-                    downloadBtn.innerHTML = `<i class="fa-solid fa-download text-xs"></i><span>Print/Download Admission Slip</span>`;
-                }
+        function downloadAdmissionLetter() {
+            const encodedId = cachedAppId.replace(/\//g, "_");
+            window.open(`${API_BASE}/admission-letter/${encodedId}`, '_blank');
+        }
 
-            } else if (status.includes("Failed")) {
-                badge.innerText = "Admission Declined";
-                badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-rose-100 text-rose-800 border border-rose-200";
-                
-                explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-rose-200 bg-rose-50/50";
-                explainIcon.className = "fa-solid fa-circle-xmark text-base text-rose-600 mt-0.5 flex-shrink-0";
-                explainTitle.innerText = "❌ Screening Score Below Required Cutoff";
-                explainText.innerText = "Unfortunately, your score did not meet the required threshold for admission into " + data.target_class + ". Printing of the admission slip has been locked.";
-                
-                if (downloadBtn) {
-                    downloadBtn.disabled = true;
-                    downloadBtn.className = "bg-slate-300 text-slate-500 font-semibold px-6 py-3 rounded-xl text-sm inline-flex items-center space-x-2.5 cursor-not-allowed border border-slate-300";
-                    downloadBtn.innerHTML = `<i class="fa-solid fa-lock text-xs"></i><span>Clearance Slip Printing Locked</span>`;
-                }
-                if (letterDesc) {
-                    letterDesc.innerText = "Clearance slip printing is restricted because your screening score did not satisfy the institutional threshold for admission.";
-                }
-
-            } else {
-                badge.innerText = "Awaiting Screening";
-                badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-amber-100 text-amber-800 border border-amber-200 animate-pulse";
-                
-                explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-amber-200 bg-amber-50/50";
-                explainIcon.className = "fa-solid fa-clock text-base text-amber-600 mt-0.5 flex-shrink-0";
-                explainTitle.innerText = "⏳ Screening Exercise Result Pending";
-                explainText.innerText = "Your screening scores have not been uploaded or synchronized yet. Please check back after the academic screening board concludes evaluation.";
-                
-                if (downloadBtn) {
-                    downloadBtn.disabled = true;
-                    downloadBtn.className = "bg-slate-300 text-slate-500 font-semibold px-6 py-3 rounded-xl text-sm inline-flex items-center space-x-2.5 cursor-not-allowed border border-slate-300";
-                    downloadBtn.innerHTML = `<i class="fa-solid fa-lock text-xs"></i><span>Pending Screening Verification</span>`;
-                }
-            }
-        }
-
-        function handleImageFallback(imgElement) {
-            imgElement.classList.add('hidden');
-            if(imgElement.id === 'sidebarAvatar') {
-                document.getElementById('sidebarPlaceholder').classList.remove('hidden');
-            } else if (imgElement.id === 'slipAvatar') {
-                if (document.getElementById('slipAvatarPlaceholder')) {
-                    document.getElementById('slipAvatarPlaceholder').classList.remove('hidden');
-                }
-            } else {
-                document.getElementById('topBannerPlaceholder').classList.remove('hidden');
-            }
-        }
-
-        function toggleMobileMenu() {
-            const sidebar = document.getElementById('sidebarPanel');
-            const icon = document.getElementById('mobileMenuIcon');
-            
-            if(sidebar.classList.contains('hidden')) {
-                sidebar.classList.remove('hidden');
-                sidebar.classList.add('flex');
-                icon.className = "fa-solid fa-xmark text-lg";
-            } else {
-                sidebar.classList.add('hidden');
-                sidebar.classList.remove('flex');
-                icon.className = "fa-solid fa-bars text-lg";
-            }
-        }
-
-        function switchView(targetPanel) {
-            const panels = ['gateway', 'slip', 'letter'];
-            panels.forEach(p => {
-                const el = document.getElementById(`panel_${p}`);
-                const menuBtn = document.getElementById(`menu_${p}`);
-                
-                if (p === targetPanel) {
-                    el.classList.remove('hidden');
-                    menuBtn.className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition bg-slate-800 text-white shadow-sm shadow-slate-950/20";
-                } else {
-                    el.classList.add('hidden');
-                    menuBtn.className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-400 hover:bg-slate-800/50 hover:text-slate-200";
-                }
-            });
-
-            if(window.innerWidth < 768) {
-                toggleMobileMenu();
-            }
-        }
-
-        function downloadAdmissionLetter() {
-            const encodedId = cachedAppId.replace(/\//g, "_");
-            window.open(`${API_BASE}/admission-letter/${encodedId}`, '_blank');
-        }
-
-        function handleLogout() {
-            localStorage.clear();
-            window.location.href = "/home";
-        }
-    </script>
+        function handleLogout() {
+            localStorage.clear();
+            window.location.href = "/home";
+        }
+    </script>
 </body>
 </html>
