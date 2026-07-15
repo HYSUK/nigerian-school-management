@@ -275,7 +275,8 @@
     window.addEventListener('DOMContentLoaded', () => {
         const serverAppId = "{{ application_id }}";
         
-        if (serverAppId && serverAppId !== "Not Provided" && serverAppId !== "None" && !serverAppId.includes("{{")) {
+        // Breaking up the string split ensures the Jinja parser ignores this line completely!
+        if (serverAppId && serverAppId !== "Not Provided" && serverAppId !== "None" && !serverAppId.includes("{" + "{")) {
             cachedAppId = serverAppId;
             localStorage.setItem('portal_app_id', cachedAppId);
         } else {
