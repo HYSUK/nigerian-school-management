@@ -273,17 +273,26 @@
     let cachedAppId = null;
 
     window.addEventListener('DOMContentLoaded', () => {
-        const serverAppId = "{{ application_id }}";
+        // 1. Try to read from the server injection template
+        let serverAppId = "{{ application_id }}";
         
-        // Breaking up the string split ensures the Jinja parser ignores this line completely!
+        // 2. Fallback: Parse the real ID directly out of the browser window's URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlAppId = urlParams.get('app_id');
+
+        // Determine the absolute truest ID context available
         if (serverAppId && serverAppId !== "Not Provided" && serverAppId !== "None" && !serverAppId.includes("{" + "{")) {
-            cachedAppId = serverAppId;
-            localStorage.setItem('portal_app_id', cachedAppId);
+            cachedAppId = serverAppId.trim();
+        } else if (urlAppId) {
+            cachedAppId = urlAppId.trim();
         } else {
             cachedAppId = localStorage.getItem('portal_app_id');
         }
 
-        if (!cachedAppId) {
+        // Lock whichever valid ID context we resolved into local storage cache
+        if (cachedAppId) {
+            localStorage.setItem('portal_app_id', cachedAppId);
+        } else {
             window.location.href = "/home";
             return;
         }
@@ -293,7 +302,7 @@
 
     async function fetchFreshServerMetrics() {
         try {
-            // Encode slashes in application_id (e.g. JS/2026/D121F)
+            // Encode slashes dynamically in the path safely (e.g. JS/2026/D121F)
             const safeAppIdPath = encodeURIComponent(cachedAppId.trim()); 
             const response = await fetch(`${API_BASE}/student/${safeAppIdPath}`);
             if (!response.ok) throw new Error("Sync node cluster rejected request.");
@@ -476,6 +485,7 @@
         }
     }
 
+    // Mobile Sidebar UI Interactions
     function toggleMobileMenu() {
         const sidebar = document.getElementById('sidebarPanel');
         const icon = document.getElementById('mobileMenuIcon');
@@ -491,6 +501,7 @@
         }
     }
 
+    // Navigation Tab Toggling
     function switchView(targetPanel) {
         const panels = ['gateway', 'slip', 'letter'];
         panels.forEach(p => {
