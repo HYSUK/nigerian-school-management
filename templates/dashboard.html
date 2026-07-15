@@ -6,6 +6,28 @@
     <title>Student Portal - Dashboard Cockpit</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* Print Stylesheet: Shows only the Registration Slip when printing */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printableRegistrationSlip, #printableRegistrationSlip * {
+                visibility: visible;
+            }
+            #printableRegistrationSlip {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 20px;
+                background: white !important;
+                color: black !important;
+            }
+        }
+    </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-800 flex flex-col md:flex-row antialiased">
 
@@ -38,6 +60,9 @@
         <nav class="flex-1 p-4 space-y-1.5">
             <button onclick="switchView('gateway')" id="menu_gateway" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition bg-slate-800 text-white shadow-sm shadow-slate-950/20">
                 <i class="fa-solid fa-chart-pie text-base w-5 text-center text-emerald-500"></i><span>Status Gateway</span>
+            </button>
+            <button onclick="switchView('slip')" id="menu_slip" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-400 hover:bg-slate-800/40 hover:text-slate-200">
+                <i class="fa-solid fa-id-card text-base w-5 text-center text-teal-400"></i><span>Registration Slip</span>
             </button>
             <button onclick="switchView('letter')" id="menu_letter" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-400 hover:bg-slate-800/40 hover:text-slate-200">
                 <i class="fa-solid fa-file-invoice text-base w-5 text-center"></i><span>Admission Letter</span>
@@ -144,6 +169,78 @@
                 </div>
             </section>
 
+            <section id="panel_slip" class="hidden space-y-6">
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl border border-teal-100 flex items-center justify-center text-lg shadow-sm">
+                                <i class="fa-solid fa-print"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-extrabold text-slate-900 tracking-tight sm:text-base">Student Registration Slip</h3>
+                                <p class="text-xs text-slate-400">Verifiable Portal Slip Documentation</p>
+                            </div>
+                        </div>
+                        
+                        <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-5 py-2.5 rounded-xl transition text-xs inline-flex items-center justify-center space-x-2 shadow-md shadow-emerald-900/10">
+                            <i class="fa-solid fa-print"></i>
+                            <span>Print Registration Slip</span>
+                        </button>
+                    </div>
+
+                    <div id="printableRegistrationSlip" class="border-2 border-slate-900 p-6 sm:p-8 rounded-xl bg-white space-y-6">
+                        <div class="flex items-center justify-between border-b-2 border-slate-900 pb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-12 h-12 bg-slate-900 text-white rounded-lg flex items-center justify-center font-bold text-xl">
+                                    <i class="fa-solid fa-graduation-cap"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-black uppercase tracking-wider text-slate-900">Official Registration Slip</h2>
+                                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Student Academic Portal</p>
+                                </div>
+                            </div>
+                            <div class="text-right text-xs">
+                                <span class="block text-slate-400 font-mono text-[10px]">APPLICATION ID</span>
+                                <span class="font-mono font-bold text-slate-900" id="slipAppId">{{ application_id }}</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                            <div class="flex flex-col items-center justify-center p-2 border border-slate-200 rounded-xl bg-slate-50">
+                                <img id="slipAvatar" src="{{ passport_url }}" class="w-28 h-28 object-cover rounded-lg border shadow-sm {% if passport_url == 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop' %}hidden{% endif %}" onerror="handleImageFallback(this)">
+                                <div id="slipAvatarPlaceholder" class="w-28 h-28 flex items-center justify-center bg-slate-200 text-slate-400 rounded-lg text-3xl {% if passport_url != 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop' %}hidden{% endif %}">
+                                    <i class="fa-solid fa-user"></i>
+                                </div>
+                            </div>
+
+                            <div class="sm:col-span-2 grid grid-cols-2 gap-4 text-xs">
+                                <div>
+                                    <span class="block text-slate-400 font-bold uppercase text-[9px]">First Name</span>
+                                    <span class="font-bold text-slate-800 text-sm" id="slipFirstName">{{ first_name }}</span>
+                                </div>
+                                <div>
+                                    <span class="block text-slate-400 font-bold uppercase text-[9px]">Last Name</span>
+                                    <span class="font-bold text-slate-800 text-sm" id="slipLastName">{{ last_name }}</span>
+                                </div>
+                                <div>
+                                    <span class="block text-slate-400 font-bold uppercase text-[9px]">Target Class Tier</span>
+                                    <span class="font-bold text-emerald-700 text-sm" id="slipClass">{{ current_class }}</span>
+                                </div>
+                                <div>
+                                    <span class="block text-slate-400 font-bold uppercase text-[9px]">Status</span>
+                                    <span class="font-bold text-slate-800 uppercase" id="slipStatus">{{ admission_status }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-slate-200 pt-4 text-[11px] text-slate-500 flex justify-between items-center">
+                            <span>Status: Verification Complete</span>
+                            <span class="font-mono">Printed via Student Cockpit Node</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section id="panel_letter" class="hidden space-y-6">
                 <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
                     <div class="flex items-center space-x-3 border-b border-slate-100 pb-4">
@@ -221,6 +318,13 @@
             document.getElementById('cardFirstName').innerText = data.first_name;
             document.getElementById('cardLastName').innerText = data.last_name;
             document.getElementById('cardClass').innerText = data.target_class;
+
+            // Slip fields
+            if (document.getElementById('slipAppId')) document.getElementById('slipAppId').innerText = data.application_id;
+            if (document.getElementById('slipFirstName')) document.getElementById('slipFirstName').innerText = data.first_name;
+            if (document.getElementById('slipLastName')) document.getElementById('slipLastName').innerText = data.last_name;
+            if (document.getElementById('slipClass')) document.getElementById('slipClass').innerText = data.target_class;
+            if (document.getElementById('slipStatus')) document.getElementById('slipStatus').innerText = status;
             
             if (document.getElementById('cardScreeningScore') && data.screening_score !== undefined) {
                 document.getElementById('cardScreeningScore').innerText = data.screening_score + "%";
@@ -231,6 +335,7 @@
             if (data.passport_url) {
                 const navAvatar = document.getElementById('sidebarAvatar');
                 const bannerAvatar = document.getElementById('topBannerAvatar');
+                const slipAvatar = document.getElementById('slipAvatar');
                 
                 let cleanUrl = data.passport_url;
                 if (cleanUrl.includes('/uploaded-passports/')) {
@@ -239,11 +344,17 @@
                 
                 navAvatar.src = cleanUrl;
                 bannerAvatar.src = cleanUrl;
+                if (slipAvatar) slipAvatar.src = cleanUrl;
                 
                 navAvatar.classList.remove('hidden');
                 bannerAvatar.classList.remove('hidden');
+                if (slipAvatar) slipAvatar.classList.remove('hidden');
+
                 document.getElementById('sidebarPlaceholder').classList.add('hidden');
                 document.getElementById('topBannerPlaceholder').classList.add('hidden');
+                if (document.getElementById('slipAvatarPlaceholder')) {
+                    document.getElementById('slipAvatarPlaceholder').classList.add('hidden');
+                }
             }
 
             // Sync Badge & Screening Decision Logic
@@ -256,7 +367,6 @@
             const letterDesc = document.getElementById('letterDescription');
 
             if (status.includes("Passed") || status.includes("Approved") || status.includes("Imported")) {
-                // PASSED / APPROVED STATE
                 badge.innerText = "Approved & Synced";
                 badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-emerald-100 text-emerald-800 border border-emerald-200";
                 
@@ -272,7 +382,6 @@
                 }
 
             } else if (status.includes("Failed")) {
-                // FAILED STATE
                 badge.innerText = "Admission Declined";
                 badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-rose-100 text-rose-800 border border-rose-200";
                 
@@ -291,7 +400,6 @@
                 }
 
             } else {
-                // AWAITING / PENDING STATE
                 badge.innerText = "Awaiting Screening";
                 badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-amber-100 text-amber-800 border border-amber-200 animate-pulse";
                 
@@ -312,6 +420,10 @@
             imgElement.classList.add('hidden');
             if(imgElement.id === 'sidebarAvatar') {
                 document.getElementById('sidebarPlaceholder').classList.remove('hidden');
+            } else if (imgElement.id === 'slipAvatar') {
+                if (document.getElementById('slipAvatarPlaceholder')) {
+                    document.getElementById('slipAvatarPlaceholder').classList.remove('hidden');
+                }
             } else {
                 document.getElementById('topBannerPlaceholder').classList.remove('hidden');
             }
@@ -333,7 +445,7 @@
         }
 
         function switchView(targetPanel) {
-            const panels = ['gateway', 'letter'];
+            const panels = ['gateway', 'slip', 'letter'];
             panels.forEach(p => {
                 const el = document.getElementById(`panel_${p}`);
                 const menuBtn = document.getElementById(`menu_${p}`);
