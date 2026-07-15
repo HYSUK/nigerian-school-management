@@ -292,7 +292,7 @@
 
     async function fetchFreshServerMetrics() {
         try {
-            // Encode slashes in application_id (e.g. JS/2026/A1B2C)
+            // Encode slashes in application_id (e.g. JS/2026/D121F)
             const safeAppIdPath = encodeURIComponent(cachedAppId.trim()); 
             const response = await fetch(`${API_BASE}/student/${safeAppIdPath}`);
             if (!response.ok) throw new Error("Sync node cluster rejected request.");
@@ -308,16 +308,20 @@
 
     function populateDashboardLayout(data) {
         // 1. Fallback for Student Names
-        const firstName = data.first_name || 'Student';
-        const lastName = data.last_name || '';
+        const firstName = data.first_name || data.FirstName || 'Student';
+        const lastName = data.last_name || data.LastName || '';
         const combinedName = `${firstName} ${lastName}`.trim();
         
-        // 2. Fallback for Class Field (Resolves 'undefined')
-        const targetClass = data.target_class || data.current_class || data.class_tier || 'N/A';
+        // 2. Fallback for Class Field (Fixes 'undefined')
+        const targetClass = data.target_class 
+                         || data.current_class 
+                         || data.CurrentClass 
+                         || data.class_tier 
+                         || 'N/A';
         
-        // 3. Status Check
-        const status = data.admission_status || "Awaiting Academic Screening";
-        const appId = data.application_id || cachedAppId;
+        // 3. Status Check & Application ID
+        const status = data.admission_status || data.ScreeningStatus || "Awaiting Academic Screening";
+        const appId = data.application_id || data.ApplicationID || cachedAppId;
 
         // --- Update Top Header & Navigation ---
         document.getElementById('topBannerStudentName').innerText = combinedName;
@@ -332,10 +336,11 @@
         document.getElementById('cardClass').innerText = targetClass;
         document.getElementById('cardScreeningStatus').innerText = status;
 
+        const screeningScore = data.screening_score ?? data.ScreeningScore ?? data.ExamScore;
         if (document.getElementById('cardScreeningScore')) {
             document.getElementById('cardScreeningScore').innerText = 
-                (data.screening_score !== undefined && data.screening_score !== null) 
-                ? `${data.screening_score}%` 
+                (screeningScore !== undefined && screeningScore !== null) 
+                ? `${screeningScore}%` 
                 : 'N/A';
         }
 
@@ -346,29 +351,49 @@
         if (document.getElementById('slipClass')) document.getElementById('slipClass').innerText = targetClass;
         if (document.getElementById('slipStatus')) document.getElementById('slipStatus').innerText = status;
 
-        // --- 4. Resolve & Render Passport Image (Resolves Broken Picture) ---
-        const photoUrl = data.passport_base64 || data.passport_url || data.passport_path;
+        // --- 4. Resolve & Render Passport Image (Fixes Broken Picture) ---
+        const rawPhoto = data.passport_base64 
+                      || data.WebPassportBase64 
+                      || data.passport_url 
+                      || data.passport_path 
+                      || data.LocalPassportPath;
 
-        if (photoUrl && photoUrl !== 'None' && photoUrl !== '') {
-            let cleanUrl = photoUrl;
+        if (rawPhoto && rawPhoto !== 'None' && rawPhoto !== '') {
+            let cleanUrl = rawPhoto;
 
-            // Handle server upload paths if stored as full OS paths
-            if (cleanUrl.includes('/uploaded-passports/')) {
-                cleanUrl = '/uploaded-passports/' + cleanUrl.split('/uploaded-passports/')[1];
-            } else if (!cleanUrl.startsWith('data:image') && !cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
-                cleanUrl = '/' + cleanUrl;
+            // Format base64 string or relative image route
+            if (!cleanUrl.startsWith('data:image') && !cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
+                if (cleanUrl.length > 200) { 
+                    cleanUrl = `data:image/jpeg;base64,${cleanUrl}`;
+                } else if (cleanUrl.includes('uploaded-passports/')) {
+                    cleanUrl = '/uploaded-passports/' + cleanUrl.split('uploaded-passports/')[1];
+                } else {
+                    cleanUrl = '/' + cleanUrl;
+                }
             }
 
-            // Apply image sources
+            // Apply image sources to DOM elements
             const navAvatar = document.getElementById('sidebarAvatar');
             const bannerAvatar = document.getElementById('topBannerAvatar');
             const slipAvatar = document.getElementById('slipAvatar');
 
-            if (navAvatar) { navAvatar.src = cleanUrl; navAvatar.classList.remove('hidden'); }
-            if (bannerAvatar) { bannerAvatar.src = cleanUrl; bannerAvatar.classList.remove('hidden'); }
-            if (slipAvatar) { slipAvatar.src = cleanUrl; slipAvatar.classList.remove('hidden'); }
+            if (navAvatar) { 
+                navAvatar.src = cleanUrl; 
+                navAvatar.onerror = () => handleImageFallback(navAvatar);
+                navAvatar.classList.remove('hidden'); 
+            }
+            if (bannerAvatar) { 
+                bannerAvatar.src = cleanUrl; 
+                bannerAvatar.onerror = () => handleImageFallback(bannerAvatar);
+                bannerAvatar.classList.remove('hidden'); 
+            }
+            if (slipAvatar) { 
+                slipAvatar.src = cleanUrl; 
+                slipAvatar.onerror = () => handleImageFallback(slipAvatar);
+                slipAvatar.classList.remove('hidden'); 
+            }
 
-            // Hide placeholders
+            // Hide default placeholders
             if (document.getElementById('sidebarPlaceholder')) document.getElementById('sidebarPlaceholder').classList.add('hidden');
             if (document.getElementById('topBannerPlaceholder')) document.getElementById('topBannerPlaceholder').classList.add('hidden');
             if (document.getElementById('slipAvatarPlaceholder')) document.getElementById('slipAvatarPlaceholder').classList.add('hidden');
@@ -384,14 +409,16 @@
         const letterDesc = document.getElementById('letterDescription');
 
         if (status.includes("Passed") || status.includes("Approved") || status.includes("Imported")) {
-            badge.innerText = "Approved & Synced";
-            badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-emerald-100 text-emerald-800 border border-emerald-200";
-            
-            explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-emerald-200 bg-emerald-50/50";
-            explainIcon.className = "fa-solid fa-circle-check text-base text-emerald-600 mt-0.5 flex-shrink-0";
-            explainTitle.innerText = "🎉 Congratulations! Admission Clearance Granted";
-            explainText.innerText = "You have met the cutoff mark for your selected class. Your clearance slip is ready for immediate printing.";
-            
+            if (badge) {
+                badge.innerText = "Approved & Synced";
+                badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-emerald-100 text-emerald-800 border border-emerald-200";
+            }
+            if (explainBox) {
+                explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-emerald-200 bg-emerald-50/50";
+                if (explainIcon) explainIcon.className = "fa-solid fa-circle-check text-base text-emerald-600 mt-0.5 flex-shrink-0";
+                if (explainTitle) explainTitle.innerText = "🎉 Congratulations! Admission Clearance Granted";
+                if (explainText) explainText.innerText = "You have met the cutoff mark for your selected class. Your clearance slip is ready for immediate printing.";
+            }
             if (downloadBtn) {
                 downloadBtn.disabled = false;
                 downloadBtn.className = "bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-3 rounded-xl transition text-sm inline-flex items-center space-x-2.5 shadow-md shadow-emerald-900/10 cursor-pointer";
@@ -399,14 +426,16 @@
             }
 
         } else if (status.includes("Failed")) {
-            badge.innerText = "Admission Declined";
-            badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-rose-100 text-rose-800 border border-rose-200";
-            
-            explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-rose-200 bg-rose-50/50";
-            explainIcon.className = "fa-solid fa-circle-xmark text-base text-rose-600 mt-0.5 flex-shrink-0";
-            explainTitle.innerText = "❌ Screening Score Below Required Cutoff";
-            explainText.innerText = `Unfortunately, your score did not meet the required threshold for admission into ${targetClass}. Printing of the admission slip has been locked.`;
-            
+            if (badge) {
+                badge.innerText = "Admission Declined";
+                badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-rose-100 text-rose-800 border border-rose-200";
+            }
+            if (explainBox) {
+                explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-rose-200 bg-rose-50/50";
+                if (explainIcon) explainIcon.className = "fa-solid fa-circle-xmark text-base text-rose-600 mt-0.5 flex-shrink-0";
+                if (explainTitle) explainTitle.innerText = "❌ Screening Score Below Required Cutoff";
+                if (explainText) explainText.innerText = `Unfortunately, your score did not meet the required threshold for admission into ${targetClass}. Printing of the admission slip has been locked.`;
+            }
             if (downloadBtn) {
                 downloadBtn.disabled = true;
                 downloadBtn.className = "bg-slate-300 text-slate-500 font-semibold px-6 py-3 rounded-xl text-sm inline-flex items-center space-x-2.5 cursor-not-allowed border border-slate-300";
@@ -417,14 +446,16 @@
             }
 
         } else {
-            badge.innerText = "Awaiting Screening";
-            badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-amber-100 text-amber-800 border border-amber-200 animate-pulse";
-            
-            explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-amber-200 bg-amber-50/50";
-            explainIcon.className = "fa-solid fa-clock text-base text-amber-600 mt-0.5 flex-shrink-0";
-            explainTitle.innerText = "⏳ Screening Exercise Result Pending";
-            explainText.innerText = "Your screening scores have not been uploaded or synchronized yet. Please check back after the academic screening board concludes evaluation.";
-            
+            if (badge) {
+                badge.innerText = "Awaiting Screening";
+                badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-amber-100 text-amber-800 border border-amber-200 animate-pulse";
+            }
+            if (explainBox) {
+                explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-amber-200 bg-amber-50/50";
+                if (explainIcon) explainIcon.className = "fa-solid fa-clock text-base text-amber-600 mt-0.5 flex-shrink-0";
+                if (explainTitle) explainTitle.innerText = "⏳ Screening Exercise Result Pending";
+                if (explainText) explainText.innerText = "Your screening scores have not been uploaded or synchronized yet. Please check back after the academic screening board concludes evaluation.";
+            }
             if (downloadBtn) {
                 downloadBtn.disabled = true;
                 downloadBtn.className = "bg-slate-300 text-slate-500 font-semibold px-6 py-3 rounded-xl text-sm inline-flex items-center space-x-2.5 cursor-not-allowed border border-slate-300";
@@ -435,7 +466,7 @@
 
     function handleImageFallback(imgElement) {
         imgElement.classList.add('hidden');
-        if(imgElement.id === 'sidebarAvatar') {
+        if (imgElement.id === 'sidebarAvatar') {
             if (document.getElementById('sidebarPlaceholder')) document.getElementById('sidebarPlaceholder').classList.remove('hidden');
         } else if (imgElement.id === 'slipAvatar') {
             if (document.getElementById('slipAvatarPlaceholder')) document.getElementById('slipAvatarPlaceholder').classList.remove('hidden');
@@ -448,7 +479,7 @@
         const sidebar = document.getElementById('sidebarPanel');
         const icon = document.getElementById('mobileMenuIcon');
         
-        if(sidebar.classList.contains('hidden')) {
+        if (sidebar.classList.contains('hidden')) {
             sidebar.classList.remove('hidden');
             sidebar.classList.add('flex');
             icon.className = "fa-solid fa-xmark text-lg";
@@ -474,7 +505,7 @@
             }
         });
 
-        if(window.innerWidth < 768) {
+        if (window.innerWidth < 768) {
             toggleMobileMenu();
         }
     }
