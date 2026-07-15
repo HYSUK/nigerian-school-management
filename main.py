@@ -2,6 +2,7 @@ import base64
 from datetime import date, datetime
 import os
 from typing import List, Optional
+import urllib.parse
 import uuid
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
@@ -25,8 +26,8 @@ pyodbc.pooling = True
 
 app = FastAPI(
     title="Nigerian Hybrid School Management Cloud Gateway",
-    description="Cleaned & Polished Supabase Cloud-Native Gateway Server",
-    version="3.0.0",
+    description="Cleaned & Polished Supabase Cloud-Native Gateway Server with MSSQL Compatibility",
+    version="3.1.0",
 )
 
 # 🔒 Local SQL Server Database Connection String (Used for desktop app sync)
@@ -364,6 +365,9 @@ async def serve_student_dashboard_view(
 
     if app_id:
         try:
+            # Unquote/decode the app_id parameter safely (converts %2F to slashes)
+            clean_app_id = urllib.parse.unquote(app_id.strip())
+            
             with psycopg2.connect(SUPABASE_DB_URI) as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
@@ -372,7 +376,7 @@ async def serve_student_dashboard_view(
                         FROM public.cloud_students_staging
                         WHERE UPPER(TRIM(application_id)) = UPPER(%s)
                         """,
-                        (app_id.strip(),),
+                        (clean_app_id,),
                     )
                     row = cursor.fetchone()
                     if row:
@@ -382,7 +386,7 @@ async def serve_student_dashboard_view(
                         screening_status = str(row[3]).strip() if row[3] else "Awaiting Academic Screening"
                         screening_score = str(row[4]) if row[4] is not None else "N/A"
 
-                        safe_app_filename = app_id.strip().replace("/", "_") + ".jpg"
+                        safe_app_filename = clean_app_id.replace("/", "_") + ".jpg"
                         if os.path.exists(os.path.join(PASSPORT_DIR, safe_app_filename)):
                             passport_url = f"/uploaded-passports/{safe_app_filename}"
                         elif row[5]:
@@ -397,7 +401,7 @@ async def serve_student_dashboard_view(
             "application_id": app_id or "Not Provided",
             "first_name": first_name,
             "last_name": last_name,
-            "current_class": target_class,
+            "current_class": target_class,       # Ensure this aligns with your HTML Jinja parameter
             "admission_status": screening_status,
             "screening_score": screening_score,
             "passport_url": passport_url,
@@ -410,13 +414,14 @@ async def serve_student_dashboard_view(
 # ==========================================
 @app.get("/api/v1/student/{app_id:path}")
 async def get_student_details(app_id: str):
-    clean_app_id = app_id.strip()
+    # Unquote url elements safely
+    clean_app_id = urllib.parse.unquote(app_id.strip())
     try:
         with psycopg2.connect(SUPABASE_DB_URI) as conn:
             with conn.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT application_id, first_name, last_name, target_class, screening_status, screening_score
+                    SELECT application_id, first_name, last_name, target_class, screening_status, screening_score, passport_base64
                     FROM public.cloud_students_staging
                     WHERE UPPER(TRIM(application_id)) = UPPER(%s)
                     """,
@@ -432,9 +437,11 @@ async def get_student_details(app_id: str):
                     "application_id": str(row[0]).strip(),
                     "first_name": str(row[1]).strip(),
                     "last_name": str(row[2]).strip(),
-                    "current_class": str(row[3]).strip(),
+                    "current_class": str(row[3]).strip(),  # target_class mapped safely to current_class
+                    "target_class": str(row[3]).strip(),   # also provide target_class fallback
                     "screening_status": str(row[4]).strip() if row[4] else "Pending",
                     "screening_score": row[5] if row[5] is not None else 0,
+                    "passport_base64": row[6] if row[6] else "",
                 }
     except Exception as e:
         raise HTTPException(
@@ -469,7 +476,7 @@ async def update_student_screening_result(
     local_ok = False
     cloud_ok = False
 
-    # 1. Update Supabase Cloud DB
+    # 1. Update Supabase Cloud DB (staging mapping table)
     try:
         with psycopg2.connect(SUPABASE_DB_URI) as conn_cloud:
             with conn_cloud.cursor() as cursor_cloud:
@@ -487,6 +494,7 @@ async def update_student_screening_result(
         print(f"--> [SUPABASE CLOUD ERROR]: {str(e)}")
 
     # 2. Update Local SQL Server (If running locally)
+    # Using correct Local MSSQL Column Schemas: ScreeningStatus, ExamScore, ScreeningScore
     try:
         with pyodbc.connect(DB_CONN_STR) as conn:
             with conn.cursor() as cursor:
