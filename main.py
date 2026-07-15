@@ -346,7 +346,14 @@ async def serve_home_portal_view(request: Request):
         request=request, name="home.html", context={}
     )
 
-
+@app.get("/register", response_class=HTMLResponse)
+async def serve_register_page(request: Request):
+    return templates.TemplateResponse(
+        request=request, 
+        name="register.html", 
+        context={}
+    )
+    
 @app.get("/dashboard", response_class=HTMLResponse)
 async def serve_student_dashboard_view(
     request: Request, app_id: Optional[str] = None
