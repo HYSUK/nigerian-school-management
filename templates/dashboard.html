@@ -369,13 +369,20 @@
                       || data.passport_path 
                       || data.LocalPassportPath;
 
-        // 🌟 SAFETY GUARD: If the API background payload has no image data, STOP. 
-        // Do not touch or overwrite the existing template values on the screen!
         if (rawPhoto && rawPhoto !== 'None' && rawPhoto !== 'null' && rawPhoto.trim() !== '') {
             let cleanUrl = rawPhoto.trim();
 
-            // Format base64 string or relative image route
-            if (!cleanUrl.startsWith('data:image') && !cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
+            // 🌟 NEW DETECTOR: Check if this is an offline absolute Windows path
+            if (cleanUrl.includes('\\') || cleanUrl.includes(':/') || cleanUrl.includes(':\\')) {
+                // Extract just the filename (e.g., "SS_2026_99490.jpg") split by either backslash or forward slash
+                const pathParts = cleanUrl.split(/[\\/]/);
+                const filename = pathParts[pathParts.length - 1];
+                
+                // Point it directly to your server's mounted static directory endpoint
+                cleanUrl = `/uploaded-passports/${filename}`;
+            } 
+            // Format fallback handling for base64 or other web routes
+            else if (!cleanUrl.startsWith('data:image') && !cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
                 if (cleanUrl.length > 200) { 
                     cleanUrl = `data:image/jpeg;base64,${cleanUrl}`;
                 } else if (cleanUrl.includes('uploaded-passports/')) {
@@ -406,7 +413,7 @@
                 slipAvatar.classList.remove('hidden'); 
             }
 
-            // Hide default placeholders since image asset data is actively confirmed
+            // Hide default placeholders
             if (document.getElementById('sidebarPlaceholder')) document.getElementById('sidebarPlaceholder').classList.add('hidden');
             if (document.getElementById('topBannerPlaceholder')) document.getElementById('topBannerPlaceholder').classList.add('hidden');
             if (document.getElementById('slipAvatarPlaceholder')) document.getElementById('slipAvatarPlaceholder').classList.add('hidden');
