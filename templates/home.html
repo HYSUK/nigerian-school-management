@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Portal Gateway - Welcome</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div class="bg-white shadow-2xl rounded-2xl max-w-md w-full overflow-hidden border border-slate-200">
+        
+        <div class="bg-gradient-to-r from-emerald-700 to-teal-600 p-6 text-white text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-3 backdrop-blur-sm">
+                <i class="fa-solid fa-graduation-cap text-3xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight">Hybrid School Portal</h1>
+            <p class="text-emerald-100 text-sm mt-1">Admissions & Registration Gateway</p>
+        </div>
+
+        <div class="flex border-b border-slate-200 bg-slate-50">
+            <button id="tabCard" onclick="switchTab('card')" class="w-1/2 py-3 text-sm font-semibold border-b-2 border-emerald-600 text-emerald-600 transition-all duration-200">
+                <i class="fa-solid fa-credit-card mr-2"></i>Use Scratch Card
+            </button>
+            <button id="tabLogin" onclick="switchTab('login')" class="w-1/2 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition-all duration-200">
+                <i class="fa-solid fa-right-to-bracket mr-2"></i>Portal Login
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div id="alertBox" class="hidden mb-4 p-4 rounded-xl text-sm font-medium border animate-pulse"></div>
+
+            <form id="cardForm" onsubmit="handleCardSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Select Target Class Entry Level</label>
+                    <select id="cardClass" required class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-white text-slate-800">
+                        <option value="" disabled selected>-- Select Entry Class Tier --</option>
+                        <optgroup label="Junior Secondary School">
+                            <option value="JS 1">JS 1</option>
+                            <option value="JS 2">JS 2</option>
+                            <option value="JS 3">JS 3</option>
+                        </optgroup>
+                        <optgroup label="Senior Secondary School">
+                            <option value="SS 1">SS 1</option>
+                            <option value="SS 2">SS 2</option>
+                            <option value="SS 3">SS 3</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Card Serial Number</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-barcode"></i></span>
+                        <input type="text" id="cardSerial" required placeholder="e.g. SN-9900223" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Card Access PIN</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-key"></i></span>
+                        <input type="password" id="cardPin" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition">
+                    </div>
+                </div>
+
+                <button type="submit" id="btnCardSubmit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
+                    <span>Verify Card & Create Account</span><i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </form>
+
+            <div id="credentialDisplay" class="hidden space-y-4">
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-800 text-xs flex items-start space-x-2">
+                    <i class="fa-solid fa-circle-exclamation text-base mt-0.5 flex-shrink-0"></i>
+                    <p><strong>IMPORTANT:</strong> Copy these login credentials immediately! Your scratch card has been safely spent, and you must use these details to complete registration.</p>
+                </div>
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                    <div>
+                        <span class="text-xs font-bold text-slate-500 block uppercase tracking-wider">Application ID / Username</span>
+                        <div class="flex items-center justify-between bg-white border border-slate-300 rounded-lg px-3 py-2 mt-1 font-mono text-base font-bold text-slate-800">
+                            <span id="dispAppId"></span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-slate-500 block uppercase tracking-wider">Portal Access Password</span>
+                        <div class="flex items-center justify-between bg-white border border-slate-300 rounded-lg px-3 py-2 mt-1 font-mono text-base font-bold text-teal-700">
+                            <span id="dispPassword"></span>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="proceedToLogin()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center space-x-2">
+                    <span>Proceed to Portal Login</span><i class="fa-solid fa-right-to-bracket text-xs"></i>
+                </button>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Application ID (Username)</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-user"></i></span>
+                        <input type="text" id="loginUsername" required placeholder="e.g. JS/2026/A1B2C" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition uppercase">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Portal Password</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-lock"></i></span>
+                        <input type="password" id="loginPassword" required placeholder="e.g. PWD-XXXXXX" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition">
+                    </div>
+                </div>
+
+                <button type="submit" id="btnLoginSubmit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
+                    <span>Sign In to Dashboard</span><i class="fa-solid fa-unlock text-xs"></i>
+                </button>
+            </form>
+
+        </div>
+    </div>
+
+   <script>
+        const API_BASE = "/api/v1";
+
+        // Global Alert Display Handler
+        function showAlert(message, type = 'error') {
+            const box = document.getElementById('alertBox');
+            box.innerText = message;
+            box.className = "mb-4 p-4 rounded-xl text-sm font-medium border transition-all duration-300 ";
+            
+            if(type === 'error') {
+                box.classList.add("bg-red-50", "border-red-200", "text-red-800");
+            } else if(type === 'success') {
+                box.classList.add("bg-emerald-50", "border-emerald-200", "text-emerald-800");
+            }
+            box.classList.remove('hidden');
+        }
+
+        function clearAlert() {
+            document.getElementById('alertBox').classList.add('hidden');
+        }
+
+        // Tab Switch Manager
+        function switchTab(mode) {
+            clearAlert();
+            const tabCard = document.getElementById('tabCard');
+            const tabLogin = document.getElementById('tabLogin');
+            const cardForm = document.getElementById('cardForm');
+            const loginForm = document.getElementById('loginForm');
+            const credentialDisplay = document.getElementById('credentialDisplay');
+
+            if (mode === 'card') {
+                tabCard.className = "w-1/2 py-3 text-sm font-semibold border-b-2 border-emerald-600 text-emerald-600 transition";
+                tabLogin.className = "w-1/2 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition";
+                cardForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                credentialDisplay.classList.add('hidden');
+            } else {
+                tabLogin.className = "w-1/2 py-3 text-sm font-semibold border-b-2 border-teal-600 text-teal-600 transition";
+                tabCard.className = "w-1/2 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition";
+                loginForm.classList.remove('hidden');
+                cardForm.classList.add('hidden');
+                credentialDisplay.classList.add('hidden');
+            }
+        }
+
+        // Transaction Handling: Scratch Card Processing
+        async function handleCardSubmit(e) {
+            e.preventDefault();
+            clearAlert();
+            
+            const btn = document.getElementById('btnCardSubmit');
+            btn.disabled = true;
+            btn.innerText = "Processing Transaction...";
+
+            const selectedClass = document.getElementById('cardClass').value;
+            const serialInput = document.getElementById('cardSerial').value.trim();
+            const pinInput = document.getElementById('cardPin').value.trim();
+
+            if (!selectedClass) {
+                showAlert("Please select a target entry level class tier before proceeding.", "error");
+                btn.disabled = false;
+                btn.innerHTML = `<span>Verify Card & Create Account</span><i class="fa-solid fa-arrow-right text-xs"></i>`;
+                return;
+            }
+
+            const payload = {
+                target_class: selectedClass,
+                serial: serialInput,
+                pin: pinInput
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/cards/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || "Authentication operational cluster failure.");
+                }
+
+                // 🔓 UNROLL CREDENTIALS WINDOW VIEW SUCCESSFULLY
+                document.getElementById('cardForm').classList.add('hidden');
+                document.getElementById('dispAppId').innerText = data.application_id;
+                document.getElementById('dispPassword').innerText = data.portal_password;
+                document.getElementById('credentialDisplay').classList.remove('hidden');
+                
+                // Pre-seed matching text metrics into portal inputs automatically for easy flow
+                document.getElementById('loginUsername').value = data.application_id;
+                document.getElementById('loginPassword').value = data.portal_password;
+
+            } catch (err) {
+                showAlert(err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = `<span>Verify Card & Create Account</span><i class="fa-solid fa-arrow-right text-xs"></i>`;
+            }
+        }
+
+        function proceedToLogin() {
+            switchTab('login');
+        }
+
+        // Secure Authentication & Profile Guard
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            clearAlert();
+
+            const btn = document.getElementById('btnLoginSubmit');
+            btn.disabled = true;
+            btn.innerText = "Authenticating Network Link...";
+
+            const usernameVal = document.getElementById('loginUsername').value.trim();
+            const passwordVal = document.getElementById('loginPassword').value.trim();
+
+            const payload = {
+                username: usernameVal,
+                password: passwordVal
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || "Authentication credentials rejected.");
+                }
+
+                if (data.success) {
+    localStorage.setItem('portal_app_id', data.application_id);
+    localStorage.setItem('portal_first_name', data.first_name);
+    localStorage.setItem('portal_last_name', data.last_name);
+    localStorage.setItem('portal_class', data.target_class);
+
+    // 🔄 Route Guard System based on account profile completion status
+    if (data.is_profile_pending) {
+        window.location.href = "/register";
+    } else {
+        // 🚀 FIXED: Append the application_id to the query parameter so the server loads their passport & details
+        window.location.href = `/dashboard?app_id=${encodeURIComponent(data.application_id)}`;
+    }
+}
+            } catch (err) {
+                showAlert(err.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = `<span>Sign In to Dashboard</span><i class="fa-solid fa-unlock text-xs"></i>`;
+            }
+        }
+    </script>
+</body>
+</html>
