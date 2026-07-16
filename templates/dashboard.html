@@ -362,7 +362,7 @@
         if (document.getElementById('slipClass')) document.getElementById('slipClass').innerText = targetClass;
         if (document.getElementById('slipStatus')) document.getElementById('slipStatus').innerText = status;
 
-// --- 4. Resolve & Render Passport Image (Fixes Broken Picture) ---
+        // --- 4. Resolve & Render Passport Image (Fixes Broken Picture) ---
         const rawPhoto = data.passport_base64 
                       || data.WebPassportBase64 
                       || data.passport_url 
@@ -372,29 +372,28 @@
         if (rawPhoto && rawPhoto !== 'None' && rawPhoto !== 'null' && rawPhoto.trim() !== '') {
             let cleanUrl = rawPhoto.trim();
 
-            // 🌟 NEW DETECTOR: Check if this is an offline absolute Windows path
+            // Check if this is an offline absolute Windows path
             if (cleanUrl.includes('\\') || cleanUrl.includes(':/') || cleanUrl.includes(':\\')) {
-                // Extract just the filename (e.g., "SS_2026_99490.jpg") split by either backslash or forward slash
                 const pathParts = cleanUrl.split(/[\\/]/);
                 const filename = pathParts[pathParts.length - 1];
-                
-                // Point it directly to your server's mounted static directory endpoint
                 cleanUrl = `/uploaded-passports/${filename}`;
             } 
-            // Format fallback handling for base64 or other web routes
+            // Format fallback handling for base64 strings or relative assets
             else if (!cleanUrl.startsWith('data:image') && !cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
+                if (cleanUrl.length > 200) { 
+                    const sanitisedBase64 = cleanUrl.replace(/\s/g, '');
+                    if (!sanitisedBase64.startsWith('data:image')) {
+                        cleanUrl = `data:image/jpeg;base64,${sanitisedBase64}`;
+                    } else {
+                        cleanUrl = sanitisedBase64;
+                    }
+                } else if (cleanUrl.includes('uploaded-passports/')) {
+                    cleanUrl = '/uploaded-passports/' + cleanUrl.split('uploaded-passports/')[1];
+                } else {
+                    cleanUrl = '/' + cleanUrl;
+                }
+            }
 
-if (cleanUrl.length > 200) { 
-    // Clear out any messy newlines or spaces coming from database casting fields
-    const sanitisedBase64 = cleanUrl.replace(/\s/g, '');
-    
-    // Check if it already has the header wrapper; if not, add it!
-    if (!sanitisedBase64.startsWith('data:image')) {
-        cleanUrl = `data:image/jpeg;base64,${sanitisedBase64}`;
-    } else {
-        cleanUrl = sanitisedBase64;
-    }
-}
             // Apply image sources to DOM elements safely
             const navAvatar = document.getElementById('sidebarAvatar');
             const bannerAvatar = document.getElementById('topBannerAvatar');
@@ -421,6 +420,7 @@ if (cleanUrl.length > 200) {
             if (document.getElementById('topBannerPlaceholder')) document.getElementById('topBannerPlaceholder').classList.add('hidden');
             if (document.getElementById('slipAvatarPlaceholder')) document.getElementById('slipAvatarPlaceholder').classList.add('hidden');
         }
+
         // --- 5. Status Banner & Download Button Logic ---
         const badge = document.getElementById('topBannerBadge');
         const explainBox = document.getElementById('screeningExplainBox');
@@ -487,65 +487,62 @@ if (cleanUrl.length > 200) {
     }
 
     function handleImageFallback(imgElement) {
-        // Prevent hiding images instantly due to asynchronous pipeline latency updates
         console.warn(`Resource signature note for element allocation: #${imgElement.id}`);
-        
-        // If an asset path genuinely doesn't exist, un-comment the lines below to enforce placeholders:
-        // imgElement.classList.add('hidden');
-        // if (imgElement.id === 'sidebarAvatar') {
-        //     if (document.getElementById('sidebarPlaceholder')) document.getElementById('sidebarPlaceholder').classList.remove('hidden');
-        // } else if (imgElement.id === 'slipAvatar') {
-        //     if (document.getElementById('slipAvatarPlaceholder')) document.getElementById('slipAvatarPlaceholder').classList.remove('hidden');
-        // } else {
-        //     if (document.getElementById('topBannerPlaceholder')) document.getElementById('topBannerPlaceholder').classList.remove('hidden');
-        // }
     }
 
     // Mobile Sidebar UI Interactions
-    function toggleMobileMenu() {
-        const sidebar = document.getElementById('sidebarPanel');
-        const icon = document.getElementById('mobileMenuIcon');
-        
-        if (sidebar.classList.contains('hidden')) {
-            sidebar.classList.remove('hidden');
-            sidebar.classList.add('flex');
-            icon.className = "fa-solid fa-xmark text-lg";
-        } else {
-            sidebar.classList.add('hidden');
-            sidebar.classList.remove('flex');
-            icon.className = "fa-solid fa-bars text-lg";
+    if (typeof toggleMobileMenu !== 'function') {
+        window.toggleMobileMenu = function() {
+            const sidebar = document.getElementById('sidebarPanel');
+            const icon = document.getElementById('mobileMenuIcon');
+            
+            if (sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('flex');
+                if (icon) icon.className = "fa-solid fa-xmark text-lg";
+            } else {
+                sidebar.classList.add('hidden');
+                sidebar.classList.remove('flex');
+                if (icon) icon.className = "fa-solid fa-bars text-lg";
+            }
         }
     }
 
     // Navigation Tab Toggling
-    function switchView(targetPanel) {
-        const panels = ['gateway', 'slip', 'letter'];
-        panels.forEach(p => {
-            const el = document.getElementById(`panel_${p}`);
-            const menuBtn = document.getElementById(`menu_${p}`);
-            
-            if (p === targetPanel) {
-                el.classList.remove('hidden');
-                menuBtn.className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition bg-slate-800 text-white shadow-sm shadow-slate-950/20";
-            } else {
-                el.classList.add('hidden');
-                menuBtn.className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-400 hover:bg-slate-800/50 hover:text-slate-200";
-            }
-        });
+    if (typeof switchView !== 'function') {
+        window.switchView = function(targetPanel) {
+            const panels = ['gateway', 'slip', 'letter'];
+            panels.forEach(p => {
+                const el = document.getElementById(`panel_${p}`);
+                const menuBtn = document.getElementById(`menu_${p}`);
+                
+                if (p === targetPanel) {
+                    if (el) el.classList.remove('hidden');
+                    if (menuBtn) menuBtn.className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition bg-slate-800 text-white shadow-sm shadow-slate-950/20";
+                } else {
+                    if (el) el.classList.add('hidden');
+                    if (menuBtn) menuBtn.className = "w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-400 hover:bg-slate-800/50 hover:text-slate-200";
+                }
+            });
 
-        if (window.innerWidth < 768) {
-            toggleMobileMenu();
+            if (window.innerWidth < 768) {
+                toggleMobileMenu();
+            }
         }
     }
 
-    function downloadAdmissionLetter() {
-        const encodedId = encodeURIComponent(cachedAppId.trim());
-        window.open(`${API_BASE}/admission-letter/${encodedId}`, '_blank');
+    if (typeof downloadAdmissionLetter !== 'function') {
+        window.downloadAdmissionLetter = function() {
+            const encodedId = encodeURIComponent(cachedAppId.trim());
+            window.open(`${API_BASE}/admission-letter/${encodedId}`, '_blank');
+        }
     }
 
-    function handleLogout() {
-        localStorage.clear();
-        window.location.href = "/home";
+    if (typeof handleLogout !== 'function') {
+        window.handleLogout = function() {
+            localStorage.clear();
+            window.location.href = "/home";
+        }
     }
 </script>
 </body>
