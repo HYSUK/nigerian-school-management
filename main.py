@@ -253,21 +253,67 @@ async def portal_user_authentication(payload: LoginRequest):
 async def verify_and_generate_credentials(payload: CardVerificationRequest):
     raw_class = payload.target_class.strip().upper().replace(" ", "")
     required_section = "JS" if raw_class.startswith("JS") else "SS"
+    
+    clean_serial = payload.serial.strip()
+    clean_pin = payload.pin.strip()
 
     try:
         with psycopg2.connect(SUPABASE_DB_URI) as conn:
             with conn.cursor() as cursor:
+                # 1️⃣ Verify the scratch card exists and matches both Serial and PIN
+                cursor.execute(
+                    """
+                    SELECT card_id, card_status, used_by_application_id 
+                    FROM public.cloud_scratch_cards 
+                    WHERE UPPER(TRIM(serial_number)) = UPPER(%s) 
+                      AND UPPER(TRIM(pin_number)) = UPPER(%s)
+                    """,
+                    (clean_serial, clean_pin)
+                )
+                card_row = cursor.fetchone()
+
+                if not card_row:
+                    raise HTTPException(
+                        status_code=404, 
+                        detail="Invalid Scratch Card. Serial or PIN number is incorrect."
+                    )
+
+                card_id, card_status, used_by_app_id = card_row
+
+                # 2️⃣ Check if it has already been consumed
+                if str(card_status).strip().upper() == "USED":
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"This scratch card has already been used by Application ID: {used_by_app_id}"
+                    )
+
+                # 3️⃣ Generate dynamic, clean credentials matching your standard project pattern
                 gen_app_id = f"{required_section}/{datetime.now().year}/{str(uuid.uuid4())[:5].upper()}"
                 gen_pwd = f"PWD-{str(uuid.uuid4())[:6].upper()}"
 
+                # 4️⃣ Update the scratch card status to Used in Supabase cloud
+                cursor.execute(
+                    """
+                    UPDATE public.cloud_scratch_cards 
+                    SET card_status = 'Used', 
+                        used_by_application_id = %s, 
+                        date_used = NOW(),
+                        sync_status = 'PENDING_SYNC'
+                    WHERE card_id = %s
+                    """,
+                    (gen_app_id, card_id)
+                )
+
+                # 5️⃣ Create the provisional profile inside your staging table
                 cursor.execute(
                     """
                     INSERT INTO public.cloud_students_staging 
-                    (application_id, student_password, target_class, sync_status)
-                    VALUES (%s, %s, %s, 'PENDING_REGISTRATION')
+                    (application_id, student_password, target_class, first_name, last_name, sync_status)
+                    VALUES (%s, %s, %s, 'PENDING', 'PROFILE', 'PENDING_REGISTRATION')
                     """,
                     (gen_app_id, gen_pwd, raw_class),
                 )
+                
                 conn.commit()
 
                 return {
@@ -275,11 +321,13 @@ async def verify_and_generate_credentials(payload: CardVerificationRequest):
                     "application_id": gen_app_id,
                     "portal_password": gen_pwd,
                 }
+                
+    except HTTPException as http_ex:
+        raise http_ex
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Scratch card registration error: {str(e)}"
+            status_code=500, detail=f"Scratch card cloud gateway verification error: {str(e)}"
         )
-
 
 # ==========================================
 #  📝 REGISTRATION ENDPOINTS
