@@ -9,6 +9,7 @@ from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadF
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ConfigDict
 import psycopg2
 import pyodbc
@@ -29,6 +30,29 @@ app = FastAPI(
     description="Cleaned & Polished Supabase Cloud-Native Gateway Server with MSSQL Compatibility",
     version="3.1.0",
 )
+
+# 🌐 EXPLICIT GLOBAL EXCEPTION HANDLERS (Ensures standard application/json outputs on errors)
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"success": False, "detail": exc.detail}
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"success": False, "detail": "Missing fields or invalid payload parameters.", "errors": exc.errors()}
+    )
+
+@app.exception_handler(Exception)
+async def global_generic_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"success": False, "detail": f"Internal runtime cluster disruption: {str(exc)}"}
+    )
+
 
 # 🔒 Local SQL Server Database Connection String (Used for desktop app sync)
 DB_CONN_STR = (
@@ -217,6 +241,8 @@ async def portal_user_authentication(payload: LoginRequest):
                     "is_profile_pending": is_pending,
                     "has_passport": bool(passport_base64),
                 }
+    except HTTPException as http_ex:
+        raise http_ex
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Database authentication error: {str(e)}"
@@ -331,6 +357,8 @@ async def complete_student_profile(payload: ProfileCompletionRequest):
                 conn.commit()
 
         return {"success": True, "message": "Profile saved successfully."}
+    except HTTPException as http_ex:
+        raise http_ex
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Database update error: {str(e)}"
@@ -365,7 +393,6 @@ async def serve_student_dashboard_view(
 
     if app_id:
         try:
-            # Unquote/decode the app_id parameter safely (converts %2F to slashes)
             clean_app_id = urllib.parse.unquote(app_id.strip())
             
             with psycopg2.connect(SUPABASE_DB_URI) as conn:
@@ -401,8 +428,8 @@ async def serve_student_dashboard_view(
             "application_id": app_id or "Not Provided",
             "first_name": first_name,
             "last_name": last_name,
-            "current_class": target_class,  # Supports {{ current_class }} in HTML
-            "target_class": target_class,   # Also supports {{ target_class }} in HTML to prevent "undefined"
+            "current_class": target_class,  
+            "target_class": target_class,   
             "admission_status": screening_status,
             "screening_score": screening_score,
             "passport_url": passport_url,
@@ -414,7 +441,6 @@ async def serve_student_dashboard_view(
 # ==========================================
 @app.get("/api/v1/student/{app_id:path}")
 async def get_student_details(app_id: str):
-    # Unquote url elements safely
     clean_app_id = urllib.parse.unquote(app_id.strip())
     try:
         with psycopg2.connect(SUPABASE_DB_URI) as conn:
@@ -437,12 +463,14 @@ async def get_student_details(app_id: str):
                     "application_id": str(row[0]).strip(),
                     "first_name": str(row[1]).strip(),
                     "last_name": str(row[2]).strip(),
-                    "current_class": str(row[3]).strip(),  # target_class mapped safely to current_class
-                    "target_class": str(row[3]).strip(),   # also provide target_class fallback
+                    "current_class": str(row[3]).strip(),  
+                    "target_class": str(row[3]).strip(),   
                     "screening_status": str(row[4]).strip() if row[4] else "Pending",
                     "screening_score": row[5] if row[5] is not None else 0,
                     "passport_base64": row[6] if row[6] else "",
                 }
+    except HTTPException as http_ex:
+        raise http_ex
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Database fetch error: {str(e)}"
@@ -476,7 +504,6 @@ async def update_student_screening_result(
     local_ok = False
     cloud_ok = False
 
-    # 1. Update Supabase Cloud DB (staging mapping table)
     try:
         with psycopg2.connect(SUPABASE_DB_URI) as conn_cloud:
             with conn_cloud.cursor() as cursor_cloud:
@@ -493,8 +520,6 @@ async def update_student_screening_result(
     except Exception as e:
         print(f"--> [SUPABASE CLOUD ERROR]: {str(e)}")
 
-    # 2. Update Local SQL Server (If running locally)
-    # Using correct Local MSSQL Column Schemas: ScreeningStatus, ExamScore, ScreeningScore
     try:
         with pyodbc.connect(DB_CONN_STR) as conn:
             with conn.cursor() as cursor:
@@ -527,9 +552,6 @@ async def update_student_screening_result(
     )
 
 
-# ==========================================
-#  🚀 LAUNCHER
-# ==========================================
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
