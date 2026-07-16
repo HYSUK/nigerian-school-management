@@ -9,17 +9,17 @@
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
 
-    <div class="bg-white shadow-2xl rounded-2xl max-w-md w-full overflow-hidden border border-slate-200">
+    <div id="portalContainer" class="bg-white shadow-2xl rounded-2xl max-w-md w-full overflow-hidden border border-slate-200 transition-all duration-500">
         
         <div class="bg-gradient-to-r from-emerald-700 to-teal-600 p-6 text-white text-center">
             <div class="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-3 backdrop-blur-sm">
                 <i class="fa-solid fa-graduation-cap text-3xl"></i>
             </div>
             <h1 class="text-2xl font-bold tracking-tight">Hybrid School Portal</h1>
-            <p class="text-emerald-100 text-sm mt-1">Admissions & Registration Gateway</p>
+            <p id="portalSubtitle" class="text-emerald-100 text-sm mt-1">Admissions & Registration Gateway</p>
         </div>
 
-        <div class="flex border-b border-slate-200 bg-slate-50">
+        <div id="navigationTabs" class="flex border-b border-slate-200 bg-slate-50">
             <button id="tabCard" onclick="switchTab('card')" class="w-1/2 py-3 text-sm font-semibold border-b-2 border-emerald-600 text-emerald-600 transition-all duration-200">
                 <i class="fa-solid fa-credit-card mr-2"></i>Use Scratch Card
             </button>
@@ -89,8 +89,8 @@
                         </div>
                     </div>
                 </div>
-                <button onclick="proceedToLogin()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center space-x-2">
-                    <span>Proceed to Portal Login</span><i class="fa-solid fa-right-to-bracket text-xs"></i>
+                <button onclick="startInLineProfileSetup()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center space-x-2">
+                    <span>Proceed directly to Profile Registration</span><i class="fa-solid fa-user-pen text-xs"></i>
                 </button>
             </div>
 
@@ -116,11 +116,77 @@
                 </button>
             </form>
 
+            <form id="profileForm" onsubmit="handleProfileSubmit(event)" class="hidden space-y-5">
+                <input type="hidden" id="profileAppId">
+                
+                <div class="border-b border-slate-100 pb-2 mb-2">
+                    <span class="text-xs uppercase font-extrabold text-emerald-700 tracking-widest block">Step 2 of 2</span>
+                    <h3 class="text-base font-bold text-slate-800">Complete Admission Profile</h3>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">First Name *</label>
+                        <input type="text" id="regFirstName" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Last Name *</label>
+                        <input type="text" id="regLastName" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Gender *</label>
+                        <select id="regGender" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <option value="">-- Choose --</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Date of Birth</label>
+                        <input type="date" id="regDob" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">State of Origin *</label>
+                        <input type="text" id="regState" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">L.G.A *</label>
+                        <input type="text" id="regLga" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Guardian Emergency Phone *</label>
+                    <input type="tel" id="regGuardianPhone" maxlength="15" required placeholder="e.g. 08031234567" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center space-x-4">
+                    <div id="passportPreview" class="w-14 h-14 bg-slate-200 border border-slate-300 rounded-lg flex items-center justify-center text-[10px] text-slate-500 font-bold overflow-hidden flex-shrink-0">
+                        No image
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-0.5">Passport Photo (JPEG) *</label>
+                        <input type="file" id="regPassportFile" accept="image/jpeg,image/jpg" class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 cursor-pointer">
+                    </div>
+                </div>
+
+                <button type="submit" id="btnProfileSubmit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl shadow-md transition flex items-center justify-center space-x-2">
+                    <span>Commit Registration</span><i class="fa-solid fa-cloud-arrow-up text-xs"></i>
+                </button>
+            </form>
+
         </div>
     </div>
 
     <script>
         const API_BASE = "/api/v1";
+        let uploadedPassportBase64 = null;
 
         function showAlert(message, type = 'error') {
             const box = document.getElementById('alertBox');
@@ -146,6 +212,10 @@
             const cardForm = document.getElementById('cardForm');
             const loginForm = document.getElementById('loginForm');
             const credentialDisplay = document.getElementById('credentialDisplay');
+            const profileForm = document.getElementById('profileForm');
+
+            // Reset master layout width container sizing constraints back to standard card look
+            document.getElementById('portalContainer').className = "bg-white shadow-2xl rounded-2xl max-w-md w-full overflow-hidden border border-slate-200 transition-all duration-500";
 
             if (mode === 'card') {
                 tabCard.className = "w-1/2 py-3 text-sm font-semibold border-b-2 border-emerald-600 text-emerald-600 transition";
@@ -153,14 +223,29 @@
                 cardForm.classList.remove('hidden');
                 loginForm.classList.add('hidden');
                 credentialDisplay.classList.add('hidden');
+                profileForm.classList.add('hidden');
             } else {
                 tabLogin.className = "w-1/2 py-3 text-sm font-semibold border-b-2 border-teal-600 text-teal-600 transition";
                 tabCard.className = "w-1/2 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition";
                 loginForm.classList.remove('hidden');
                 cardForm.classList.add('hidden');
                 credentialDisplay.classList.add('hidden');
+                profileForm.classList.add('hidden');
             }
         }
+
+        // Live stream pipeline processing configuration for image uploads
+        document.getElementById('regPassportFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                uploadedPassportBase64 = event.target.result;
+                document.getElementById('passportPreview').innerHTML = `<img src="${uploadedPassportBase64}" class="w-full h-full object-cover">`;
+            };
+            reader.readAsDataURL(file);
+        });
 
         async function handleCardSubmit(e) {
             e.preventDefault();
@@ -174,18 +259,7 @@
             const serialInput = document.getElementById('cardSerial').value.trim();
             const pinInput = document.getElementById('cardPin').value.trim();
 
-            if (!selectedClass) {
-                showAlert("Please select a target entry level class tier before proceeding.", "error");
-                btn.disabled = false;
-                btn.innerHTML = `<span>Verify Card & Create Account</span><i class="fa-solid fa-arrow-right text-xs"></i>`;
-                return;
-            }
-
-            const payload = {
-                target_class: selectedClass,
-                serial: serialInput,
-                pin: pinInput
-            };
+            const payload = { target_class: selectedClass, serial: serialInput, pin: pinInput };
 
             try {
                 const response = await fetch(`${API_BASE}/cards/verify`, {
@@ -195,16 +269,15 @@
                 });
                 
                 const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.detail || "Authentication failure.");
-                }
+                if (!response.ok) throw new Error(data.detail || "Authentication failure.");
 
                 document.getElementById('cardForm').classList.add('hidden');
                 document.getElementById('dispAppId').innerText = data.application_id;
                 document.getElementById('dispPassword').innerText = data.portal_password;
                 document.getElementById('credentialDisplay').classList.remove('hidden');
                 
+                // Prefill tracking nodes behind the layout stack automatically
+                document.getElementById('profileAppId').value = data.application_id;
                 document.getElementById('loginUsername').value = data.application_id;
                 document.getElementById('loginPassword').value = data.portal_password;
 
@@ -215,8 +288,59 @@
             }
         }
 
-        function proceedToLogin() {
-            switchTab('login');
+        // Action trigger route that transforms layout dynamically to reveal inline profile fields
+        function startInLineProfileSetup() {
+            clearAlert();
+            document.getElementById('navigationTabs').classList.add('hidden');
+            document.getElementById('credentialDisplay').classList.add('hidden');
+            document.getElementById('portalSubtitle').innerText = "Step 2: Bio-Data Form Processing";
+            
+            // Elegantly expand width constraint sizing metrics to handle full column grid components properly
+            document.getElementById('portalContainer').className = "bg-white shadow-2xl rounded-2xl max-w-xl w-full overflow-hidden border border-slate-200 transition-all duration-500";
+            document.getElementById('profileForm').classList.remove('hidden');
+        }
+
+        async function handleProfileSubmit(e) {
+            e.preventDefault();
+            clearAlert();
+
+            const btn = document.getElementById('btnProfileSubmit');
+            btn.disabled = true;
+            btn.innerText = "Saving Profile Parameters...";
+
+            const payload = {
+                application_id: document.getElementById('profileAppId').value,
+                first_name: document.getElementById('regFirstName').value,
+                last_name: document.getElementById('regLastName').value,
+                gender: document.getElementById('regGender').value,
+                date_of_birth: document.getElementById('regDob').value || null,
+                state_of_origin: document.getElementById('regState').value,
+                lga: document.getElementById('regLga').value,
+                guardian_phone: document.getElementById('regGuardianPhone').value,
+                passport_base64: uploadedPassportBase64
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || "Error saving profile data.");
+
+                showAlert("✨ Profile registration verified successfully! Accessing tracking dashboard views...", "success");
+                
+                setTimeout(() => {
+                    window.location.href = `/dashboard?app_id=${encodeURIComponent(payload.application_id)}`;
+                }, 1800);
+
+            } catch (err) {
+                showAlert(err.message, 'error');
+                btn.disabled = false;
+                btn.innerText = "Commit Registration";
+            }
         }
 
         async function handleLoginSubmit(e) {
@@ -238,19 +362,14 @@
                 });
 
                 const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.detail || "Authentication credentials rejected.");
-                }
+                if (!response.ok) throw new Error(data.detail || "Authentication credentials rejected.");
 
                 if (data.success) {
-                    // Save info to local storage for the standalone registration page
-                    localStorage.setItem('portal_app_id', data.application_id);
-                    localStorage.setItem('portal_class', data.target_class || 'JS 1');
-
                     if (data.is_profile_pending) {
-                        // 🚀 Redirect to the standalone /register page!
-                        window.location.href = "/register";
+                        // If they logged in but haven't finished fields, pop up registration instantly inline!
+                        document.getElementById('profileAppId').value = data.application_id;
+                        document.getElementById('loginForm').classList.add('hidden');
+                        startInLineProfileSetup();
                     } else {
                         window.location.href = `/dashboard?app_id=${encodeURIComponent(data.application_id)}`;
                     }
