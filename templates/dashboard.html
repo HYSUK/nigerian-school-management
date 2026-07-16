@@ -383,15 +383,18 @@
             } 
             // Format fallback handling for base64 or other web routes
             else if (!cleanUrl.startsWith('data:image') && !cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
-                if (cleanUrl.length > 200) { 
-                    cleanUrl = `data:image/jpeg;base64,${cleanUrl}`;
-                } else if (cleanUrl.includes('uploaded-passports/')) {
-                    cleanUrl = '/uploaded-passports/' + cleanUrl.split('uploaded-passports/')[1];
-                } else {
-                    cleanUrl = '/' + cleanUrl;
-                }
-            }
 
+if (cleanUrl.length > 200) { 
+    // Clear out any messy newlines or spaces coming from database casting fields
+    const sanitisedBase64 = cleanUrl.replace(/\s/g, '');
+    
+    // Check if it already has the header wrapper; if not, add it!
+    if (!sanitisedBase64.startsWith('data:image')) {
+        cleanUrl = `data:image/jpeg;base64,${sanitisedBase64}`;
+    } else {
+        cleanUrl = sanitisedBase64;
+    }
+}
             // Apply image sources to DOM elements safely
             const navAvatar = document.getElementById('sidebarAvatar');
             const bannerAvatar = document.getElementById('topBannerAvatar');
