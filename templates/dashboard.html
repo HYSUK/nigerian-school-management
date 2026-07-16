@@ -362,15 +362,17 @@
         if (document.getElementById('slipClass')) document.getElementById('slipClass').innerText = targetClass;
         if (document.getElementById('slipStatus')) document.getElementById('slipStatus').innerText = status;
 
-        // --- 4. Resolve & Render Passport Image (Fixes Broken Picture) ---
+// --- 4. Resolve & Render Passport Image (Fixes Broken Picture) ---
         const rawPhoto = data.passport_base64 
                       || data.WebPassportBase64 
                       || data.passport_url 
                       || data.passport_path 
                       || data.LocalPassportPath;
 
-        if (rawPhoto && rawPhoto !== 'None' && rawPhoto !== '') {
-            let cleanUrl = rawPhoto;
+        // 🌟 SAFETY GUARD: If the API background payload has no image data, STOP. 
+        // Do not touch or overwrite the existing template values on the screen!
+        if (rawPhoto && rawPhoto !== 'None' && rawPhoto !== 'null' && rawPhoto.trim() !== '') {
+            let cleanUrl = rawPhoto.trim();
 
             // Format base64 string or relative image route
             if (!cleanUrl.startsWith('data:image') && !cleanUrl.startsWith('http') && !cleanUrl.startsWith('/')) {
@@ -383,7 +385,7 @@
                 }
             }
 
-            // Apply image sources to DOM elements
+            // Apply image sources to DOM elements safely
             const navAvatar = document.getElementById('sidebarAvatar');
             const bannerAvatar = document.getElementById('topBannerAvatar');
             const slipAvatar = document.getElementById('slipAvatar');
@@ -404,12 +406,11 @@
                 slipAvatar.classList.remove('hidden'); 
             }
 
-            // Hide default placeholders
+            // Hide default placeholders since image asset data is actively confirmed
             if (document.getElementById('sidebarPlaceholder')) document.getElementById('sidebarPlaceholder').classList.add('hidden');
             if (document.getElementById('topBannerPlaceholder')) document.getElementById('topBannerPlaceholder').classList.add('hidden');
             if (document.getElementById('slipAvatarPlaceholder')) document.getElementById('slipAvatarPlaceholder').classList.add('hidden');
         }
-
         // --- 5. Status Banner & Download Button Logic ---
         const badge = document.getElementById('topBannerBadge');
         const explainBox = document.getElementById('screeningExplainBox');
