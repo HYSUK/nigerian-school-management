@@ -425,14 +425,14 @@ async def serve_home_portal_view(request: Request):
 
 @app.get("/apply", response_class=HTMLResponse)
 async def serve_apply_page(request: Request):
-    return templates.TemplateResponse("apply.html", {"request": request})
+    return templates.TemplateResponse(
+        request=request, name="apply.html", context={}
+    )
 
 @app.get("/register", response_class=HTMLResponse)
 async def serve_register_page(request: Request):
     return templates.TemplateResponse(
-        request=request, 
-        name="register.html", 
-        context={}
+        request=request, name="register.html", context={}
     )
     
 @app.get("/dashboard", response_class=HTMLResponse)
