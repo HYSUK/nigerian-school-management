@@ -31,6 +31,9 @@ app = FastAPI(
     version="3.1.0",
 )
 
+# Mount the static directory to serve static files like images, CSS, etc.
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # 🌐 EXPLICIT GLOBAL EXCEPTION HANDLERS (Ensures standard application/json outputs on errors)
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
