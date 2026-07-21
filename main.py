@@ -423,7 +423,6 @@ async def serve_home_portal_view(request: Request):
         request=request, name="home.html", context={}
     )
 
-# 2. Scratch Card Verification & Login Page (Formerly home.html)
 @app.get("/apply", response_class=HTMLResponse)
 async def serve_apply_page(request: Request):
     return templates.TemplateResponse("apply.html", {"request": request})
