@@ -4,6 +4,7 @@ import os
 from typing import List, Optional
 import urllib.parse
 import uuid
+from admin import router as admin_router
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -30,6 +31,8 @@ app = FastAPI(
     description="Cleaned & Polished Supabase Cloud-Native Gateway Server with MSSQL Compatibility",
     version="3.1.0",
 )
+
+app.include_router(admin_router)
 
 # Mount the static directory to serve static files like images, CSS, etc.
 app.mount("/static", StaticFiles(directory="static"), name="static")
