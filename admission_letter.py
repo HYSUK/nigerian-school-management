@@ -35,7 +35,7 @@ SIGNATURE_PATH = os.path.join(BASE_DIR, "static", "images", "signature.png")
 SCHOOL_NAME = "NIGERIA SECONDARY SCHOOL SYSTEM"
 SCHOOL_LINES = [
     "Official Portal Operations Hub, Registry Department",
-    "Email: registry@nigeriaschools.edu.ng",
+    "Email: registry@hysuk.me",
 ]
 SIGN_OFF = ["Office of the Registrar Board", "Nigeria Secondary School Network Operations"]
 BODY = [
