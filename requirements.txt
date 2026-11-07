@@ -5,3 +5,4 @@ pyodbc
 python-dotenv
 jinja2
 pydantic
+reportlab
