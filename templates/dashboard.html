@@ -333,7 +333,7 @@
                          || 'N/A';
         
         // 3. Status Check & Application ID
-        const status = data.admission_status || data.ScreeningStatus || "Awaiting Academic Screening";
+        const status = data.admission_status || data.screening_status || data.ScreeningStatus || "Awaiting Academic Screening";
         const appId = data.application_id || data.ApplicationID || cachedAppId;
 
         // --- Update Top Header & Navigation ---
