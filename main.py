@@ -202,12 +202,12 @@ async def portal_user_authentication(payload: LoginRequest):
         with psycopg2.connect(SUPABASE_DB_URI) as conn:
             with conn.cursor() as cursor:
                 query = """
-                SELECT 
+                SELECT
                     staging_id,
-                    application_id, 
-                    first_name, 
-                    last_name, 
-                    target_class, 
+                    application_id,
+                    first_name,
+                    last_name,
+                    target_class,
                     screening_status,
                     screening_score,
                     cutoff_mark,
@@ -427,7 +427,7 @@ async def serve_register_page(request: Request):
     return templates.TemplateResponse(
         request=request, name="register.html", context={}
     )
-    
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def serve_student_dashboard_view(
     request: Request, app_id: Optional[str] = None
@@ -439,7 +439,7 @@ async def serve_student_dashboard_view(
     if app_id:
         try:
             clean_app_id = urllib.parse.unquote(app_id.strip())
-            
+
             with psycopg2.connect(SUPABASE_DB_URI) as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
@@ -473,8 +473,8 @@ async def serve_student_dashboard_view(
             "application_id": app_id or "Not Provided",
             "first_name": first_name,
             "last_name": last_name,
-            "current_class": target_class,  
-            "target_class": target_class,   
+            "current_class": target_class,
+            "target_class": target_class,
             "admission_status": screening_status,
             "screening_score": screening_score,
             "passport_url": passport_url,
