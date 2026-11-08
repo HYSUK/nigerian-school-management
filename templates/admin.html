@@ -72,6 +72,7 @@
 <script>
 const CSRF = document.querySelector('meta[name=csrf]').content;
 const AREAS = {{ areas|tojson }};
+const ROLE = {{ role|tojson }};
 const $ = (s, r = document) => r.querySelector(s);
 const main = $('#main');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -267,9 +268,86 @@ function fees() {
   loadStructure();
 }
 
+     /* ---------- Scratch cards ---------- */
+     function cards() {
+       const chip = { Unused:'Pending', Sold:'Passed', Used:'muted', Voided:'Failed' };
+       const settingsPanel = ROLE === 'admin' ? `<h2>Card settings</h2>
+         <div class="bar">
+           <label><span><input type="checkbox" id="rs"> Only sold cards can be used</span></label>
+           <label>Sales mode<select id="sm"><option value="printed">Printed cards</option><option value="online">Online</option><option value="both">Both</option></select></label>
+           <label>Card price (₦)<input id="cp" type="number" min="0" step="0.01"></label>
+           <button id="ssave" class="primary">Save settings</button></div>
+         <p class="muted">Online card sales are not built yet. Keep this on Printed for now.</p>` : '';
+       main.innerHTML = `<h1>Scratch cards</h1>
+         <p id="sum" class="muted"></p>
+         <div class="bar">
+           <label>Search<input id="q" type="search" placeholder="Serial, buyer or application ID" size="28"></label>
+           <label>Status<select id="st"><option value="">All</option>${opts(['Unused','Sold','Used','Voided'])}</select></label>
+           <label>Section<select id="sec"><option value="">All</option><option>JS</option><option>SS</option></select></label>
+           <label>Batch<input id="bt" list="bl" size="14"></label><datalist id="bl"></datalist>
+         </div>
+         <div class="tablewrap"><table><thead><tr><th>Serial</th><th>Section</th><th>Batch</th><th>Status</th><th>Sold to</th><th>Sold</th><th>Used by</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+         <p id="count" class="muted"></p>
+         <h2>Record sales</h2>
+         <p class="muted">Only cards marked as sold can be used by parents. Type or scan serial numbers, one per line.</p>
+         <textarea id="serials" rows="4" placeholder="123456789012"></textarea>
+         <div class="bar" style="margin-top:8px">
+           <label>Sold to<input id="to" placeholder="Office or agent name"></label>
+           <label>Price each (₦)<input id="pr" type="number" min="0" step="0.01"></label>
+           <button id="sell" class="primary">Mark as sold</button></div>
+         <details><summary>Sell a whole batch to an agent</summary>
+           <div class="bar" style="margin-top:8px">
+             <label>Batch<input id="bb" list="bl" size="14"></label>
+             <label>Sold to<input id="bto"></label>
+             <label>Price each (₦)<input id="bpr" type="number" min="0" step="0.01"></label>
+             <button id="sellbatch" class="primary">Sell batch</button></div></details>
+         ${settingsPanel}`;
+       const load = run(async () => {
+         const [s, d] = await Promise.all([
+           api('GET', '/admin/api/cards/summary'),
+           api('GET', '/admin/api/cards?' + new URLSearchParams({ q:$('#q').value, status:$('#st').value, section:$('#sec').value, batch:$('#bt').value, limit:50 }))]);
+         $('#sum').textContent = `Unused ${s.counts.Unused} · Sold ${s.counts.Sold} · Used ${s.counts.Used} · Voided ${s.counts.Voided} · Sales ${money(s.revenue)}`;
+         $('#bl').innerHTML = s.batches.map(b => `<option value="${esc(b)}">`).join('');
+         $('#rows').innerHTML = d.cards.length ? d.cards.map(c => `<tr data-serial="${esc(c.serial_number)}">
+           <td>${esc(c.serial_number)}</td><td>${esc(c.school_section)}</td><td>${esc(c.batch_number)}</td>
+           <td><span class="chip ${chip[c.status]}">${c.status}</span></td><td>${esc(c.sold_to || '')}</td>
+           <td>${c.sold_at ? esc(c.sold_at.slice(0, 10)) : ''}</td><td>${esc(c.used_by_application_id || '')}</td>
+           <td>${c.status === 'Unused' || c.status === 'Sold' ? '<button class="link danger void">Void</button>' : ''}</td></tr>`).join('')
+           : '<tr><td colspan="8" class="empty">No cards match.</td></tr>';
+         $('#count').textContent = d.total > 50 ? `Showing 50 of ${d.total}. Narrow the search to see the rest.` : `${d.total} card${d.total === 1 ? '' : 's'}`;
+       });
+       const report = d => toast(`${d.sold} marked as sold` + (d.skipped.length ? `, ${d.skipped.length} skipped (${d.skipped.slice(0, 3).map(x => x.serial + ': ' + x.reason).join('; ')})` : ''), d.sold === 0 && d.skipped.length > 0);
+       $('#sell').onclick = run(async () => {
+         const serials = $('#serials').value.split(/\s+/).filter(Boolean);
+         if (!serials.length || !$('#to').value.trim() || $('#pr').value === '') throw new Error('Enter the serial numbers, who they were sold to, and the price.');
+         report(await api('POST', '/admin/api/cards/sell', { serials, sold_to:$('#to').value, price:+$('#pr').value }));
+         $('#serials').value = ''; load();
+       });
+       $('#sellbatch').onclick = run(async () => {
+         if (!$('#bb').value.trim() || !$('#bto').value.trim() || $('#bpr').value === '') throw new Error('Enter the batch, who it is sold to, and the price.');
+         if (!confirm(`Mark every unsold card in batch ${$('#bb').value} as sold?`)) return;
+         report(await api('POST', '/admin/api/cards/sell', { batch:$('#bb').value.trim(), sold_to:$('#bto').value, price:+$('#bpr').value })); load();
+       });
+       $('#rows').onclick = run(async e => {
+         if (!e.target.classList.contains('void')) return;
+         const serial = e.target.closest('tr').dataset.serial, reason = prompt(`Why void card ${serial}?`);
+         if (!reason) return;
+         await api('POST', '/admin/api/cards/void', { serial, reason }); toast('Card voided'); load();
+       });
+       if (ROLE === 'admin') {
+         api('GET', '/admin/api/cards/settings').then(s => { $('#rs').checked = s.require_sold_card; $('#sm').value = s.card_sales_mode; $('#cp').value = s.card_price; }).catch(() => {});
+         $('#ssave').onclick = run(async () => {
+           await api('POST', '/admin/api/cards/settings', { require_sold_card:$('#rs').checked, card_sales_mode:$('#sm').value, card_price:+($('#cp').value || 0) });
+           toast('Settings saved');
+         });
+       }
+       let t; ['#q', '#st', '#sec', '#bt'].forEach(s => $(s).addEventListener('input', () => { clearTimeout(t); t = setTimeout(load, 250); }));
+       load();
+     }
+  
 /* ---------- Shell ---------- */
-const VIEWS = { screening:['Screening results', screening], assessments:['Assessments', assessments], fees:['Fees', fees] };
-const order = ['screening', 'assessments', 'fees'].filter(a => AREAS.includes(a));
+const VIEWS = { screening:['Screening results', screening], assessments:['Assessments', assessments], fees:['Fees', fees], cards:['Scratch cards', cards] };
+const order = ['screening', 'assessments', 'fees', 'cards'].filter(a => AREAS.includes(a));
 $('#nav').innerHTML = order.map(a => `<button data-v="${a}">${VIEWS[a][0]}</button>`).join('');
 function show(v) {
   document.querySelectorAll('#nav button').forEach(b => b.dataset.v === v ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
