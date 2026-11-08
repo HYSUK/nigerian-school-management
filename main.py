@@ -507,7 +507,11 @@ async def get_student_details(app_id: str):
             with conn.cursor() as cursor:
                 cursor.execute(
                     """
-                    SELECT application_id, first_name, last_name, target_class, screening_status, screening_score, passport_base64
+                    SELECT application_id, first_name, last_name, target_class, screening_status,
+                           screening_score, passport_base64, gender, date_of_birth, state_of_origin,
+                           lga, home_address, guardian_name, guardian_relationship, guardian_phone,
+                           prev_primary_school, primary_from_year, primary_to_year,
+                           prev_junior_sec_school, junior_sec_from_year, junior_sec_to_year, cutoff_mark
                     FROM public.cloud_students_staging
                     WHERE UPPER(TRIM(application_id)) = UPPER(%s)
                     """,
@@ -515,26 +519,41 @@ async def get_student_details(app_id: str):
                 )
                 row = cursor.fetchone()
                 if not row:
-                    raise HTTPException(
-                        status_code=404, detail="Student not found."
-                    )
+                    raise HTTPException(status_code=404, detail="Student not found.")
+                (app, first, last, klass, status_, score, passport, gender, dob, state, lga,
+                 address, g_name, g_rel, g_phone, primary, p_from, p_to, junior, j_from, j_to,
+                 cutoff) = row
+                clean = lambda v: str(v).strip() if v is not None else ""
                 return {
                     "success": True,
-                    "application_id": str(row[0]).strip(),
-                    "first_name": str(row[1]).strip(),
-                    "last_name": str(row[2]).strip(),
-                    "current_class": str(row[3]).strip(),  
-                    "target_class": str(row[3]).strip(),   
-                    "screening_status": str(row[4]).strip() if row[4] else "Pending",
-                    "screening_score": row[5] if row[5] is not None else 0,
-                    "passport_base64": row[6] if row[6] else "",
+                    "application_id": clean(app),
+                    "first_name": clean(first),
+                    "last_name": clean(last),
+                    "current_class": clean(klass),
+                    "target_class": clean(klass),
+                    "screening_status": clean(status_) or "Pending",
+                    "screening_score": score if score is not None else 0,
+                    "cutoff_mark": cutoff,
+                    "passport_base64": passport if passport else "",
+                    "gender": clean(gender),
+                    "date_of_birth": dob.isoformat() if dob else "",
+                    "state_of_origin": clean(state),
+                    "lga": clean(lga),
+                    "home_address": clean(address),
+                    "guardian_name": clean(g_name),
+                    "guardian_relationship": clean(g_rel),
+                    "guardian_phone": clean(g_phone),
+                    "prev_primary_school": clean(primary),
+                    "primary_from_year": p_from,
+                    "primary_to_year": p_to,
+                    "prev_junior_sec_school": clean(junior),
+                    "junior_sec_from_year": j_from,
+                    "junior_sec_to_year": j_to,
                 }
     except HTTPException as http_ex:
         raise http_ex
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Database fetch error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Database fetch error: {str(e)}")
 
 
 # ==========================================
