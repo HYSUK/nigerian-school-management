@@ -41,9 +41,9 @@ router = APIRouter(prefix="/admin")
 COOKIE_NAME = "hysuk_admin"
 SESSION_TTL = 8 * 60 * 60
 ROLE_AREAS = {
-    "admin": {"screening", "assessments", "fees"},
+    "admin": {"screening", "assessments", "fees", "cards"},
     "exams": {"screening", "assessments"},
-    "bursar": {"fees"},
+    "bursar": {"fees", "cards"},
 }
 Term = Literal["First", "Second", "Third"]
 SESSION_RE = r"^\d{4}/\d{4}$"
