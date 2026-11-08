@@ -5,6 +5,7 @@ from typing import List, Optional
 import urllib.parse
 import uuid
 from admin import router as admin_router
+from admin_cards import router as cards_router, card_problem, guard_check, guard_fail, guard_clear
 from admission_letter import router as letter_router
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
@@ -35,6 +36,7 @@ app = FastAPI(
 
 app.include_router(admin_router)
 app.include_router(letter_router)
+app.include_router(cards_router)
 
 # Mount the static directory to serve static files like images, CSS, etc.
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -258,84 +260,67 @@ async def portal_user_authentication(payload: LoginRequest):
 
 
 @app.post("/api/v1/cards/verify", status_code=status.HTTP_201_CREATED)
-async def verify_and_generate_credentials(payload: CardVerificationRequest):
+async def verify_and_generate_credentials(payload: CardVerificationRequest, request: Request):
     raw_class = payload.target_class.strip().upper().replace(" ", "")
     required_section = "JS" if raw_class.startswith("JS") else "SS"
-    
     clean_serial = payload.serial.strip()
     clean_pin = payload.pin.strip()
-
+    guard_check(request, clean_serial)
     try:
-        with psycopg2.connect(SUPABASE_DB_URI) as conn:
+         with psycopg2.connect(SUPABASE_DB_URI) as conn:
             with conn.cursor() as cursor:
-                # 1️⃣ Verify the scratch card exists and matches both Serial and PIN
                 cursor.execute(
-                    """
-                    SELECT card_id, card_status, used_by_application_id 
-                    FROM public.cloud_scratch_cards 
-                    WHERE UPPER(TRIM(serial_number)) = UPPER(%s) 
-                      AND UPPER(TRIM(pin_number)) = UPPER(%s)
-                    """,
-                    (clean_serial, clean_pin)
-                )
-                card_row = cursor.fetchone()
+                """
+                SELECT c.card_id, c.card_status, c.school_section,
+                EXISTS (SELECT 1 FROM public.cloud_card_sales s
+                WHERE s.serial_number = c.serial_number AND s.voided_at IS NULL) AS is_sold
+                FROM public.cloud_scratch_cards c
+                 WHERE UPPER(TRIM(c.serial_number)) = UPPER(%s)
+                 AND UPPER(TRIM(c.pin_number)) = UPPER(%s)
+                 FOR UPDATE OF c
+                 """,
+                 (clean_serial, clean_pin),
+                 )
+                 card_row = cursor.fetchone()
+                 if not card_row:
+                    guard_fail(request, clean_serial)
+                    raise HTTPException(status_code=404, detail="Invalid Scratch Card. Serial or PIN number is incorrect.")
+                card_id, card_status, card_section, is_sold = card_row
+                cursor.execute("SELECT value FROM public.cloud_portal_settings WHERE key = 'require_sold_card'")
+                setting = cursor.fetchone()
+                require_sold = (setting[0] if setting else "true").strip().lower() != "false"
 
-                if not card_row:
-                    raise HTTPException(
-                        status_code=404, 
-                        detail="Invalid Scratch Card. Serial or PIN number is incorrect."
-                    )
+                problem = card_problem(card_status, card_section, is_sold, required_section, require_sold)
+                if problem:
+                    raise HTTPException(status_code=400, detail=problem)
 
-                card_id, card_status, used_by_app_id = card_row
-
-                # 2️⃣ Check if it has already been consumed
-                if str(card_status).strip().upper() == "USED":
-                    raise HTTPException(
-                        status_code=400, 
-                        detail=f"This scratch card has already been used by Application ID: {used_by_app_id}"
-                    )
-
-                # 3️⃣ Generate dynamic, clean credentials matching your standard project pattern
                 gen_app_id = f"{required_section}/{datetime.now().year}/{str(uuid.uuid4())[:5].upper()}"
                 gen_pwd = f"PWD-{str(uuid.uuid4())[:6].upper()}"
 
-                # 4️⃣ Update the scratch card status to Used in Supabase cloud
                 cursor.execute(
-                    """
-                    UPDATE public.cloud_scratch_cards 
-                    SET card_status = 'Used', 
-                        used_by_application_id = %s, 
-                        date_used = NOW(),
-                        sync_status = 'PENDING_SYNC'
-                    WHERE card_id = %s
-                    """,
-                    (gen_app_id, card_id)
+                """
+                UPDATE public.cloud_scratch_cards
+                SET card_status = 'Used', used_by_application_id = %s,
+                date_used = NOW(), sync_status = 'PENDING_SYNC'
+                WHERE card_id = %s
+                """,
+                (gen_app_id, card_id),
                 )
-
-                # 5️⃣ Create the provisional profile inside your staging table
                 cursor.execute(
-                    """
-                    INSERT INTO public.cloud_students_staging 
-                    (application_id, student_password, target_class, first_name, last_name, sync_status)
-                    VALUES (%s, %s, %s, 'PENDING', 'PROFILE', 'PENDING_REGISTRATION')
-                    """,
-                    (gen_app_id, gen_pwd, raw_class),
+                """
+                INSERT INTO public.cloud_students_staging
+                (application_id, student_password, target_class, first_name, last_name, sync_status)
+                VALUES (%s, %s, %s, 'PENDING', 'PROFILE', 'PENDING_REGISTRATION')
+                """,
+                (gen_app_id, gen_pwd, raw_class),
                 )
-                
                 conn.commit()
-
-                return {
-                    "success": True,
-                    "application_id": gen_app_id,
-                    "portal_password": gen_pwd,
-                }
-                
-    except HTTPException as http_ex:
-        raise http_ex
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Scratch card cloud gateway verification error: {str(e)}"
-        )
+                guard_clear(request, clean_serial)
+                return {"success": True, "application_id": gen_app_id, "portal_password": gen_pwd}
+            except HTTPException as http_ex:
+                raise http_ex
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Scratch card cloud gateway verification error: {str(e)}")
 
 # ==========================================
 #  📝 REGISTRATION ENDPOINTS
