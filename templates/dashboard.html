@@ -10,25 +10,21 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        /* Print Stylesheet: Shows only the Registration Slip when printing */
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            #printableRegistrationSlip, #printableRegistrationSlip * {
-                visibility: visible;
-            }
-            #printableRegistrationSlip {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 20px;
-                background: white !important;
-                color: black !important;
-            }
-        }
+.sl { display:block; color:#94a3b8; font-weight:700; text-transform:uppercase; font-size:9px; letter-spacing:.04em; }
+.sv { display:block; font-weight:700; color:#1e293b; font-size:13px; }
+.sh { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.12em; color:#475569;
+      border-bottom:1px solid #e2e8f0; padding-bottom:4px; margin-bottom:10px; }
+@page { size: A4; margin: 12mm; }
+@media print {
+    html, body { background: #fff !important; }
+    body * { visibility: hidden; }
+    #printableRegistrationSlip, #printableRegistrationSlip * { visibility: visible; }
+    #printableRegistrationSlip {
+        position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 20px;
+        background: #fff !important; color: #000 !important;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+}
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-800 flex flex-col md:flex-row antialiased">
