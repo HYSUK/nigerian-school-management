@@ -35,8 +35,8 @@ app = FastAPI(
 )
 
 app.include_router(admin_router)
-app.include_router(letter_router)
 app.include_router(cards_router)
+app.include_router(letter_router)
 
 # Mount the static directory to serve static files like images, CSS, etc.
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -202,12 +202,12 @@ async def portal_user_authentication(payload: LoginRequest):
         with psycopg2.connect(SUPABASE_DB_URI) as conn:
             with conn.cursor() as cursor:
                 query = """
-                SELECT
+                SELECT 
                     staging_id,
-                    application_id,
-                    first_name,
-                    last_name,
-                    target_class,
+                    application_id, 
+                    first_name, 
+                    last_name, 
+                    target_class, 
                     screening_status,
                     screening_score,
                     cutoff_mark,
@@ -263,64 +263,96 @@ async def portal_user_authentication(payload: LoginRequest):
 async def verify_and_generate_credentials(payload: CardVerificationRequest, request: Request):
     raw_class = payload.target_class.strip().upper().replace(" ", "")
     required_section = "JS" if raw_class.startswith("JS") else "SS"
+
     clean_serial = payload.serial.strip()
     clean_pin = payload.pin.strip()
+
+    # Block repeated wrong guesses before touching the database
     guard_check(request, clean_serial)
+
     try:
-         with psycopg2.connect(SUPABASE_DB_URI) as conn:
+        with psycopg2.connect(SUPABASE_DB_URI) as conn:
             with conn.cursor() as cursor:
+                # 1) Find the card by serial AND pin, and lock the row so it cannot be redeemed twice at once
                 cursor.execute(
-                """
-                SELECT c.card_id, c.card_status, c.school_section,
-                EXISTS (SELECT 1 FROM public.cloud_card_sales s
-                WHERE s.serial_number = c.serial_number AND s.voided_at IS NULL) AS is_sold
-                FROM public.cloud_scratch_cards c
-                 WHERE UPPER(TRIM(c.serial_number)) = UPPER(%s)
-                 AND UPPER(TRIM(c.pin_number)) = UPPER(%s)
-                 FOR UPDATE OF c
-                 """,
-                 (clean_serial, clean_pin),
-                 )
-                 card_row = cursor.fetchone()
-                 if not card_row:
+                    """
+                    SELECT c.card_id, c.card_status, c.school_section,
+                           EXISTS (
+                               SELECT 1 FROM public.cloud_card_sales s
+                               WHERE s.serial_number = c.serial_number AND s.voided_at IS NULL
+                           ) AS is_sold
+                    FROM public.cloud_scratch_cards c
+                    WHERE UPPER(TRIM(c.serial_number)) = UPPER(%s)
+                      AND UPPER(TRIM(c.pin_number)) = UPPER(%s)
+                    FOR UPDATE OF c
+                    """,
+                    (clean_serial, clean_pin),
+                )
+                card_row = cursor.fetchone()
+
+                if not card_row:
                     guard_fail(request, clean_serial)
-                    raise HTTPException(status_code=404, detail="Invalid Scratch Card. Serial or PIN number is incorrect.")
+                    raise HTTPException(
+                        status_code=404,
+                        detail="Invalid Scratch Card. Serial or PIN number is incorrect.",
+                    )
+
                 card_id, card_status, card_section, is_sold = card_row
-                cursor.execute("SELECT value FROM public.cloud_portal_settings WHERE key = 'require_sold_card'")
+
+                # 2) Is the "only sold cards" rule switched on? (defaults to on)
+                cursor.execute(
+                    "SELECT value FROM public.cloud_portal_settings WHERE key = 'require_sold_card'"
+                )
                 setting = cursor.fetchone()
                 require_sold = (setting[0] if setting else "true").strip().lower() != "false"
 
+                # 3) Used, voided, wrong section, or not sold yet?
                 problem = card_problem(card_status, card_section, is_sold, required_section, require_sold)
                 if problem:
                     raise HTTPException(status_code=400, detail=problem)
 
+                # 4) Generate credentials
                 gen_app_id = f"{required_section}/{datetime.now().year}/{str(uuid.uuid4())[:5].upper()}"
                 gen_pwd = f"PWD-{str(uuid.uuid4())[:6].upper()}"
 
+                # 5) Mark the card as used (the sync engine carries this down to the desktop)
                 cursor.execute(
-                """
-                UPDATE public.cloud_scratch_cards
-                SET card_status = 'Used', used_by_application_id = %s,
-                date_used = NOW(), sync_status = 'PENDING_SYNC'
-                WHERE card_id = %s
-                """,
-                (gen_app_id, card_id),
+                    """
+                    UPDATE public.cloud_scratch_cards
+                    SET card_status = 'Used',
+                        used_by_application_id = %s,
+                        date_used = NOW(),
+                        sync_status = 'PENDING_SYNC'
+                    WHERE card_id = %s
+                    """,
+                    (gen_app_id, card_id),
                 )
+
+                # 6) Create the provisional profile inside the staging table
                 cursor.execute(
-                """
-                INSERT INTO public.cloud_students_staging
-                (application_id, student_password, target_class, first_name, last_name, sync_status)
-                VALUES (%s, %s, %s, 'PENDING', 'PROFILE', 'PENDING_REGISTRATION')
-                """,
-                (gen_app_id, gen_pwd, raw_class),
+                    """
+                    INSERT INTO public.cloud_students_staging
+                    (application_id, student_password, target_class, first_name, last_name, sync_status)
+                    VALUES (%s, %s, %s, 'PENDING', 'PROFILE', 'PENDING_REGISTRATION')
+                    """,
+                    (gen_app_id, gen_pwd, raw_class),
                 )
+
                 conn.commit()
                 guard_clear(request, clean_serial)
-                return {"success": True, "application_id": gen_app_id, "portal_password": gen_pwd}
-            except HTTPException as http_ex:
-                raise http_ex
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Scratch card cloud gateway verification error: {str(e)}")
+
+                return {
+                    "success": True,
+                    "application_id": gen_app_id,
+                    "portal_password": gen_pwd,
+                }
+
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Scratch card cloud gateway verification error: {str(e)}"
+        )
 
 # ==========================================
 #  📝 REGISTRATION ENDPOINTS
@@ -427,7 +459,7 @@ async def serve_register_page(request: Request):
     return templates.TemplateResponse(
         request=request, name="register.html", context={}
     )
-
+    
 @app.get("/dashboard", response_class=HTMLResponse)
 async def serve_student_dashboard_view(
     request: Request, app_id: Optional[str] = None
@@ -439,7 +471,7 @@ async def serve_student_dashboard_view(
     if app_id:
         try:
             clean_app_id = urllib.parse.unquote(app_id.strip())
-
+            
             with psycopg2.connect(SUPABASE_DB_URI) as conn:
                 with conn.cursor() as cursor:
                     cursor.execute(
@@ -473,8 +505,8 @@ async def serve_student_dashboard_view(
             "application_id": app_id or "Not Provided",
             "first_name": first_name,
             "last_name": last_name,
-            "current_class": target_class,
-            "target_class": target_class,
+            "current_class": target_class,  
+            "target_class": target_class,   
             "admission_status": screening_status,
             "screening_score": screening_score,
             "passport_url": passport_url,
