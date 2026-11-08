@@ -375,7 +375,7 @@
         if (document.getElementById('slipLastName')) document.getElementById('slipLastName').innerText = lastName;
         if (document.getElementById('slipClass')) document.getElementById('slipClass').innerText = targetClass;
         if (document.getElementById('slipStatus')) document.getElementById('slipStatus').innerText = status;
-
+fillSlipDetails(data, status);
         // --- 4. Resolve & Render Passport Image (Fixes Broken Picture) ---
         const rawPhoto = data.passport_base64 
                       || data.WebPassportBase64 
