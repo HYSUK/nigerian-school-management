@@ -500,6 +500,41 @@
         }
     }
 
+    function fillSlipDetails(d, status) {
+    const val = (k) => (d[k] !== undefined && d[k] !== null && String(d[k]).trim() !== '') ? String(d[k]).trim() : '—';
+    const school = (name, from, to) => {
+        if (!name) return '—';
+        const years = (from || to) ? ` (${from || '?'} – ${to || '?'})` : '';
+        return name + years;
+    };
+    let dob = '—';
+    if (d.date_of_birth) {
+        const parsed = new Date(d.date_of_birth + 'T00:00:00');
+        dob = isNaN(parsed) ? d.date_of_birth : parsed.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+    const hasScore = d.screening_score !== undefined && d.screening_score !== null;
+    const values = {
+        gender: val('gender'), dob,
+        state: val('state_of_origin'), lga: val('lga'), address: val('home_address'),
+        guardianName: val('guardian_name'), guardianRel: val('guardian_relationship'), guardianPhone: val('guardian_phone'),
+        primary: school(d.prev_primary_school, d.primary_from_year, d.primary_to_year),
+        junior: school(d.prev_junior_sec_school, d.junior_sec_from_year, d.junior_sec_to_year),
+        score: hasScore ? `${d.screening_score}%` : '—',
+        cutoff: d.cutoff_mark != null ? `${d.cutoff_mark}%` : '—',
+        decision: status
+    };
+    Object.entries(values).forEach(([k, v]) => {
+        const el = document.querySelector(`[data-slip="${k}"]`);
+        if (el) el.textContent = v;
+    });
+    stampPrintTime();
+}
+function stampPrintTime() {
+    const el = document.querySelector('[data-slip="printed"]');
+    if (el) el.textContent = new Date().toLocaleString('en-GB', { dateStyle: 'long', timeStyle: 'short' });
+}
+window.addEventListener('beforeprint', stampPrintTime);
+
     function handleImageFallback(imgElement) {
         console.warn(`Resource signature note for element allocation: #${imgElement.id}`);
     }
