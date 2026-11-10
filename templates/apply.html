@@ -128,7 +128,48 @@
                     <button type="submit" id="btnLoginSubmit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
                         <span>Sign In to Dashboard</span><i class="fa-solid fa-unlock text-xs"></i>
                     </button>
+
+                    <div class="text-center pt-1">
+                        <button type="button" onclick="showRecover()" class="text-xs font-semibold text-teal-700 hover:text-teal-900 underline">Forgot your Application ID or password?</button>
+                    </div>
                 </form>
+
+                <!-- 🔑 Account recovery: card serial + PIN (+ date of birth if registration was completed) -->
+                <form id="recoverForm" onsubmit="handleRecoverSubmit(event)" class="hidden space-y-4">
+                    <div>
+                        <h3 class="text-sm font-extrabold text-slate-800">Retrieve Application ID and Password</h3>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Enter the serial number and PIN of the scratch card used to create the account. If registration was completed, also enter the student's date of birth.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Card Serial Number</label>
+                        <input type="text" id="recSerial" required inputmode="numeric" autocomplete="off" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-sm font-mono transition" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Card PIN</label>
+                        <input type="text" id="recPin" required inputmode="numeric" autocomplete="off" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-sm font-mono transition" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Student's Date of Birth <span class="font-normal text-slate-400">(only if registration was completed)</span></label>
+                        <input type="date" id="recDob" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-sm transition" />
+                    </div>
+                    <button type="submit" id="btnRecoverSubmit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
+                        <span>Retrieve My Login Details</span><i class="fa-solid fa-key text-xs"></i>
+                    </button>
+                    <button type="button" onclick="switchTab('login')" class="w-full text-xs font-semibold text-slate-500 hover:text-slate-700">Back to Sign In</button>
+                </form>
+
+                <div id="recoverResult" class="hidden space-y-4">
+                    <div class="p-5 rounded-xl border border-emerald-200 bg-emerald-50 space-y-2">
+                        <p class="text-sm font-bold text-emerald-800">Your login details</p>
+                        <div class="text-xs text-slate-500">Application ID</div>
+                        <div id="recAppId" class="font-mono font-bold text-slate-900 text-lg break-all"></div>
+                        <div class="text-xs text-slate-500 pt-1">New Password</div>
+                        <div id="recPassword" class="font-mono font-bold text-slate-900 text-lg break-all"></div>
+                        <p id="recNote" class="text-xs text-slate-600 pt-1"></p>
+                        <p class="text-xs font-semibold text-amber-700">Write these down now. The password is shown only once.</p>
+                    </div>
+                    <button type="button" onclick="switchTab('login')" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl shadow-md transition">Continue to Sign In</button>
+                </div>
 
             </div>
         </div>
@@ -158,6 +199,8 @@
         // Tab Switch Manager
         function switchTab(mode) {
             clearAlert();
+            document.getElementById('recoverForm').classList.add('hidden');
+            document.getElementById('recoverResult').classList.add('hidden');
             const tabCard = document.getElementById('tabCard');
             const tabLogin = document.getElementById('tabLogin');
             const cardForm = document.getElementById('cardForm');
@@ -279,14 +322,58 @@
                     if (data.is_profile_pending) {
                         window.location.href = "/register";
                     } else {
-                        // 🚀 Append application_id parameter to render passport & details
-                        window.location.href = `/dashboard?app_id=${encodeURIComponent(data.application_id)}`;
+                        // 🚀 The signed-in cookie identifies the student; no ID in the address
+                        window.location.href = "/dashboard";
                     }
                 }
             } catch (err) {
                 showAlert(err.message, 'error');
                 btn.disabled = false;
                 btn.innerHTML = `<span>Sign In to Dashboard</span><i class="fa-solid fa-unlock text-xs"></i>`;
+            }
+        }
+
+        // 🔑 Account recovery
+        function showRecover() {
+            clearAlert();
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('recoverForm').classList.remove('hidden');
+        }
+
+        async function handleRecoverSubmit(e) {
+            e.preventDefault();
+            clearAlert();
+            const btn = document.getElementById('btnRecoverSubmit');
+            btn.disabled = true;
+            btn.innerText = "Checking details...";
+            try {
+                const response = await fetch(`${API_BASE}/auth/recover`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        serial: document.getElementById('recSerial').value.trim(),
+                        pin: document.getElementById('recPin').value.trim(),
+                        date_of_birth: document.getElementById('recDob').value || null
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(typeof data.detail === 'string' ? data.detail : "Please check the details you entered.");
+                }
+                document.getElementById('recoverForm').classList.add('hidden');
+                document.getElementById('recAppId').innerText = data.application_id;
+                document.getElementById('recPassword').innerText = data.new_password;
+                document.getElementById('recNote').innerText = data.registration_complete
+                    ? "Your old password no longer works."
+                    : "Your registration is not complete yet. Sign in to finish it.";
+                document.getElementById('loginUsername').value = data.application_id;
+                document.getElementById('loginPassword').value = data.new_password;
+                document.getElementById('recoverResult').classList.remove('hidden');
+            } catch (err) {
+                showAlert(err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>Retrieve My Login Details</span><i class="fa-solid fa-key text-xs"></i>`;
             }
         }
     </script>
