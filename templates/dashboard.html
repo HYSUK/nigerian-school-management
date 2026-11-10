@@ -316,8 +316,8 @@
 
     async function fetchFreshServerMetrics() {
         try {
-            const safeAppIdPath = encodeURIComponent(cachedAppId.trim()); 
-            const response = await fetch(`${API_BASE}/student/${safeAppIdPath}`);
+            const response = await fetch(`${API_BASE}/student/me`);
+            if (response.status === 401) { window.location.href = "/apply"; return; }
             if (!response.ok) throw new Error("Sync node cluster rejected request.");
             const res = await response.json();
             
@@ -588,9 +588,11 @@ window.addEventListener('beforeprint', stampPrintTime);
     }
 
     if (typeof handleLogout !== 'function') {
-        window.handleLogout = function() {
-            localStorage.clear();
-            window.location.href = "/home";
+        window.handleLogout = async function() {
+    try { await fetch('/api/v1/auth/logout', { method: 'POST' }); } catch (e) {}
+    localStorage.clear();
+    window.location.href = "/home";
+}
         }
     }
 </script>
