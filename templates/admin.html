@@ -139,12 +139,19 @@ function screening() {
       return `<tr data-id="${esc(s.application_id)}"><td>${esc(s.application_id)}</td><td>${esc(s.first_name)} ${esc(s.last_name)}</td>
         <td>${esc(s.target_class)}</td><td><input type="number" min="0" max="100" class="sc" value="${s.screening_score ?? ''}"></td>
         <td><input type="number" min="0" max="100" class="co" value="${s.cutoff_mark ?? 50}"></td>
-        <td><span class="chip ${esc(st)}">${esc(st)}</span></td><td><button class="save">Save</button></td></tr>`; }).join('')
+        <td><span class="chip ${esc(st)}">${esc(st)}</span></td><td><button class="save">Save</button> <button class="link reset">New password</button></td></tr>`; }).join('')
       : '<tr><td colspan="7" class="empty">No students match. Clear a filter or check the spelling.</td></tr>';
     $('#count').textContent = d.total > 50 ? `Showing 50 of ${d.total}. Narrow the search to see the rest.` : `${d.total} student${d.total === 1 ? '' : 's'}`;
   });
   let t; ['#q','#cls','#st'].forEach(s => $(s).addEventListener('input', () => { clearTimeout(t); t = setTimeout(load, 250); }));
   $('#rows').onclick = run(async e => {
+      if (e.target.classList.contains('reset')) {
+      const id = e.target.closest('tr').dataset.id;
+      if (!confirm(`Issue a new password for ${id}? The old one stops working.`)) return;
+      const d = await api('POST', '/admin/api/students/reset-password', { application_id: id });
+      alert(`New password for ${d.application_id}:\n\n${d.new_password}\n\nGive it to the parent in person. It is not shown again.`);
+      return;
+    }
     if (!e.target.classList.contains('save')) return;
     const tr = e.target.closest('tr'), score = tr.querySelector('.sc').value;
     if (score === '') throw new Error('Enter a score first.');
