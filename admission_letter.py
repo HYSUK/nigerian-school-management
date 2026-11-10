@@ -17,7 +17,7 @@ from datetime import datetime
 from xml.sax.saxutils import escape
 
 import psycopg2
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
@@ -25,6 +25,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.utils import ImageReader
 from reportlab.platypus import HRFlowable, Image, Paragraph, SimpleDocTemplate, Spacer
+
+from student_portal import require_student
 
 router = APIRouter()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -35,7 +37,7 @@ SIGNATURE_PATH = os.path.join(BASE_DIR, "static", "images", "signature.png")
 SCHOOL_NAME = "NIGERIA SECONDARY SCHOOL SYSTEM"
 SCHOOL_LINES = [
     "Official Portal Operations Hub, Registry Department",
-    "Email: registry@hysuk.me",
+    "Email: registry@nigeriaschools.edu.ng",
 ]
 SIGN_OFF = ["Office of the Registrar Board", "Nigeria Secondary School Network Operations"]
 BODY = [
@@ -125,8 +127,11 @@ def build_letter_pdf(full_name: str, klass: str, app_id: str, date_text: str) ->
 
 
 @router.get("/api/v1/admission-letter/{app_id:path}")
-def admission_letter(app_id: str):
+def admission_letter(app_id: str, request: Request):
     clean_id = app_id.strip().replace("\\", "/")
+    me = require_student(request)  # must be signed in
+    if clean_id.upper() != me.upper():
+        raise HTTPException(403, "You can only open your own admission letter.")
     dsn = os.getenv("DATABASE_URL")
     if not dsn:
         raise HTTPException(503, "The portal database is not configured.")

@@ -1,15 +1,14 @@
-import base64
-from datetime import date, datetime
 import os
-from typing import List, Optional
-import urllib.parse
+from datetime import datetime
+from typing import Optional
 import uuid
 from admin import router as admin_router
 from admin_cards import router as cards_router, card_problem, guard_check, guard_fail, guard_clear
 from admission_letter import router as letter_router
+from student_portal import router as student_router
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.exceptions import RequestValidationError
@@ -25,18 +24,22 @@ DEFAULT_SUPABASE_URI = (
 )
 SUPABASE_DB_URI = os.getenv("DATABASE_URL", DEFAULT_SUPABASE_URI)
 
+# Key the Java desktop app sends with its sync calls (set SYNC_API_KEY on Render to change it)
+SYNC_API_KEY = os.getenv("SYNC_API_KEY", "hysuk_sync_token_2026")
+
 # Connection pooling for local SQL Server
 pyodbc.pooling = True
 
 app = FastAPI(
     title="Nigerian Hybrid School Management Cloud Gateway",
     description="Cleaned & Polished Supabase Cloud-Native Gateway Server with MSSQL Compatibility",
-    version="3.1.0",
+    version="3.2.0",
 )
 
 app.include_router(admin_router)
 app.include_router(cards_router)
 app.include_router(letter_router)
+app.include_router(student_router)
 
 # Mount the static directory to serve static files like images, CSS, etc.
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -58,9 +61,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def global_generic_exception_handler(request: Request, exc: Exception):
+    print(f"--> [UNHANDLED ERROR]: {exc!r}")
     return JSONResponse(
         status_code=500,
-        content={"success": False, "detail": f"Internal runtime cluster disruption: {str(exc)}"}
+        content={"success": False, "detail": "Something went wrong on the server. Please try again."}
     )
 
 
@@ -74,18 +78,7 @@ DB_CONN_STR = (
     "Encrypt=no;"
 )
 
-# 📁 Physical Passport Directory Setup
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PASSPORT_DIR = os.path.join(BASE_DIR, "passports")
-if not os.path.exists(PASSPORT_DIR):
-    os.makedirs(PASSPORT_DIR)
-
-app.mount(
-    "/uploaded-passports",
-    StaticFiles(directory=PASSPORT_DIR),
-    name="passports",
-)
-
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
@@ -93,37 +86,11 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 # ==========================================
 #  📋 DATA SCHEMAS
 # ==========================================
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-
 class CardVerificationRequest(BaseModel):
     serial: str
     pin: str
     target_class: str
     model_config = ConfigDict(str_strip_whitespace=True)
-
-
-class ProfileCompletionRequest(BaseModel):
-    application_id: str
-    first_name: str
-    last_name: str
-    gender: str
-    date_of_birth: Optional[str] = None
-    state_of_origin: str
-    lga: str
-    home_address: Optional[str] = None
-    guardian_name: Optional[str] = None
-    guardian_relationship: Optional[str] = None
-    guardian_phone: str
-    prev_primary_school: Optional[str] = None
-    primary_from_year: Optional[int] = None
-    primary_to_year: Optional[int] = None
-    prev_junior_sec_school: Optional[str] = None
-    junior_sec_from_year: Optional[int] = None
-    junior_sec_to_year: Optional[int] = None
-    passport_base64: Optional[str] = None
 
 
 class ScreeningUpdatePayload(BaseModel):
@@ -168,97 +135,9 @@ class ScreeningUpdatePayload(BaseModel):
         return 50
 
 
-class AssignCredentialsPayload(BaseModel):
-    pending_id: int
-    application_id: str
-    student_password: str
-
-
 # ==========================================
-#  🛠️ HELPER FUNCTIONS
+#  💳 SCRATCH CARD VERIFICATION (creates the student account)
 # ==========================================
-def save_base64_passport_to_disk(app_id: str, base64_str: str) -> str:
-    try:
-        if "," in base64_str:
-            base64_str = base64_str.split(",")[1]
-        image_bytes = base64.b64decode(base64_str)
-        safe_filename = app_id.replace("/", "_") + ".jpg"
-        disk_path = os.path.join(PASSPORT_DIR, safe_filename)
-        with open(disk_path, "wb") as f:
-            f.write(image_bytes)
-        return os.path.abspath(disk_path)
-    except Exception as e:
-        raise HTTPException(
-            status_code=400, detail=f"Passport save failure: {str(e)}"
-        )
-
-
-# ==========================================
-#  🚪 AUTHENTICATION & CARD VERIFICATION
-# ==========================================
-@app.post("/api/v1/auth/login")
-async def portal_user_authentication(payload: LoginRequest):
-    try:
-        with psycopg2.connect(SUPABASE_DB_URI) as conn:
-            with conn.cursor() as cursor:
-                query = """
-                SELECT 
-                    staging_id,
-                    application_id, 
-                    first_name, 
-                    last_name, 
-                    target_class, 
-                    screening_status,
-                    screening_score,
-                    cutoff_mark,
-                    passport_base64
-                FROM public.cloud_students_staging
-                WHERE UPPER(TRIM(application_id)) = UPPER(%s)
-                AND UPPER(TRIM(student_password)) = UPPER(%s)
-                """
-                cursor.execute(query, (payload.username.strip(), payload.password.strip()))
-                row = cursor.fetchone()
-
-                if not row:
-                    raise HTTPException(
-                        status_code=401, detail="Invalid Application ID or Password."
-                    )
-
-                (
-                    staging_id,
-                    app_id,
-                    first_name,
-                    last_name,
-                    target_class,
-                    screening_status,
-                    screening_score,
-                    cutoff_mark,
-                    passport_base64,
-                ) = row
-
-                is_pending = not first_name or str(first_name).strip().upper() == "PENDING"
-
-                return {
-                    "success": True,
-                    "staging_id": staging_id,
-                    "application_id": str(app_id).strip(),
-                    "first_name": str(first_name).strip() if first_name else "",
-                    "last_name": str(last_name).strip() if last_name else "",
-                    "target_class": str(target_class).strip() if target_class else "N/A",
-                    "screening_status": str(screening_status).strip() if screening_status else "Pending",
-                    "screening_score": screening_score if screening_score is not None else 0,
-                    "cutoff_mark": cutoff_mark if cutoff_mark is not None else 0,
-                    "is_profile_pending": is_pending,
-                    "has_passport": bool(passport_base64),
-                }
-    except HTTPException as http_ex:
-        raise http_ex
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Database authentication error: {str(e)}"
-        )
-
-
 @app.post("/api/v1/cards/verify", status_code=status.HTTP_201_CREATED)
 async def verify_and_generate_credentials(payload: CardVerificationRequest, request: Request):
     raw_class = payload.target_class.strip().upper().replace(" ", "")
@@ -350,96 +229,14 @@ async def verify_and_generate_credentials(payload: CardVerificationRequest, requ
     except HTTPException as http_ex:
         raise http_ex
     except Exception as e:
+        print(f"--> [CARD VERIFY ERROR]: {e!r}")
         raise HTTPException(
-            status_code=500, detail=f"Scratch card cloud gateway verification error: {str(e)}"
-        )
-
-# ==========================================
-#  📝 REGISTRATION ENDPOINTS
-# ==========================================
-@app.post("/api/v1/register", status_code=status.HTTP_200_OK)
-@app.post("/api/v1/mobile/register", status_code=status.HTTP_200_OK)
-async def complete_student_profile(payload: ProfileCompletionRequest):
-    try:
-        clean_app_id = payload.application_id.strip()
-
-        if payload.passport_base64 and payload.passport_base64.strip():
-            save_base64_passport_to_disk(clean_app_id, payload.passport_base64)
-
-        parsed_dob = None
-        if payload.date_of_birth and payload.date_of_birth.strip():
-            try:
-                parsed_dob = datetime.strptime(
-                    payload.date_of_birth.strip(), "%Y-%m-%d"
-                ).date()
-            except ValueError:
-                pass
-
-        with psycopg2.connect(SUPABASE_DB_URI) as conn:
-            with conn.cursor() as cursor:
-                query = """
-                UPDATE public.cloud_students_staging
-                SET first_name = %s,
-                    last_name = %s,
-                    gender = %s,
-                    date_of_birth = %s,
-                    state_of_origin = %s,
-                    lga = %s,
-                    home_address = %s,
-                    guardian_name = %s,
-                    guardian_relationship = %s,
-                    guardian_phone = %s,
-                    prev_primary_school = %s,
-                    primary_from_year = %s,
-                    primary_to_year = %s,
-                    prev_junior_sec_school = %s,
-                    junior_sec_from_year = %s,
-                    junior_sec_to_year = %s,
-                    passport_base64 = %s,
-                    sync_status = 'PENDING_IMPORT'
-                WHERE UPPER(TRIM(application_id)) = UPPER(%s)
-                """
-                cursor.execute(
-                    query,
-                    (
-                        payload.first_name.strip()[:50],
-                        payload.last_name.strip()[:50],
-                        payload.gender.strip()[:10],
-                        parsed_dob,
-                        payload.state_of_origin.strip()[:50],
-                        payload.lga.strip()[:50],
-                        payload.home_address,
-                        payload.guardian_name,
-                        payload.guardian_relationship or "Parent",
-                        payload.guardian_phone.strip()[:15],
-                        payload.prev_primary_school,
-                        payload.primary_from_year,
-                        payload.primary_to_year,
-                        payload.prev_junior_sec_school,
-                        payload.junior_sec_from_year,
-                        payload.junior_sec_to_year,
-                        payload.passport_base64,
-                        clean_app_id,
-                    ),
-                )
-
-                if cursor.rowcount == 0:
-                    raise HTTPException(
-                        status_code=404, detail="Student application profile not found."
-                    )
-                conn.commit()
-
-        return {"success": True, "message": "Profile saved successfully."}
-    except HTTPException as http_ex:
-        raise http_ex
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Database update error: {str(e)}"
+            status_code=500, detail="Could not verify the card right now. Please try again."
         )
 
 
 # ==========================================
-#  🌐 WEB VIEWS & DASHBOARD
+#  🌐 PUBLIC PAGES (login and registration pages are in student_portal.py)
 # ==========================================
 @app.get("/")
 @app.get("/home")
@@ -454,134 +251,16 @@ async def serve_apply_page(request: Request):
         request=request, name="apply.html", context={}
     )
 
-@app.get("/register", response_class=HTMLResponse)
-async def serve_register_page(request: Request):
-    return templates.TemplateResponse(
-        request=request, name="register.html", context={}
-    )
-    
-@app.get("/dashboard", response_class=HTMLResponse)
-async def serve_student_dashboard_view(
-    request: Request, app_id: Optional[str] = None
-):
-    passport_url = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop"
-    first_name, last_name, target_class = "Student", "Profile", "N/A"
-    screening_status, screening_score = "Awaiting Academic Screening", "N/A"
-
-    if app_id:
-        try:
-            clean_app_id = urllib.parse.unquote(app_id.strip())
-            
-            with psycopg2.connect(SUPABASE_DB_URI) as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(
-                        """
-                        SELECT first_name, last_name, target_class, screening_status, screening_score, passport_base64
-                        FROM public.cloud_students_staging
-                        WHERE UPPER(TRIM(application_id)) = UPPER(%s)
-                        """,
-                        (clean_app_id,),
-                    )
-                    row = cursor.fetchone()
-                    if row:
-                        first_name = str(row[0]).strip() if row[0] else "Student"
-                        last_name = str(row[1]).strip() if row[1] else "Profile"
-                        target_class = str(row[2]).strip() if row[2] else "N/A"
-                        screening_status = str(row[3]).strip() if row[3] else "Awaiting Academic Screening"
-                        screening_score = str(row[4]) if row[4] is not None else "N/A"
-
-                        safe_app_filename = clean_app_id.replace("/", "_") + ".jpg"
-                        if os.path.exists(os.path.join(PASSPORT_DIR, safe_app_filename)):
-                            passport_url = f"/uploaded-passports/{safe_app_filename}"
-                        elif row[5]:
-                            passport_url = f"data:image/jpeg;base64,{row[5]}"
-        except Exception as e:
-            print(f"Dashboard lookup error: {str(e)}")
-
-    return templates.TemplateResponse(
-        request=request,
-        name="dashboard.html",
-        context={
-            "application_id": app_id or "Not Provided",
-            "first_name": first_name,
-            "last_name": last_name,
-            "current_class": target_class,  
-            "target_class": target_class,   
-            "admission_status": screening_status,
-            "screening_score": screening_score,
-            "passport_url": passport_url,
-        },
-    )
 
 # ==========================================
-#  🔍 STUDENT LOOKUP ENDPOINT
-# ==========================================
-@app.get("/api/v1/student/{app_id:path}")
-async def get_student_details(app_id: str):
-    clean_app_id = urllib.parse.unquote(app_id.strip())
-    try:
-        with psycopg2.connect(SUPABASE_DB_URI) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT application_id, first_name, last_name, target_class, screening_status,
-                           screening_score, passport_base64, gender, date_of_birth, state_of_origin,
-                           lga, home_address, guardian_name, guardian_relationship, guardian_phone,
-                           prev_primary_school, primary_from_year, primary_to_year,
-                           prev_junior_sec_school, junior_sec_from_year, junior_sec_to_year, cutoff_mark
-                    FROM public.cloud_students_staging
-                    WHERE UPPER(TRIM(application_id)) = UPPER(%s)
-                    """,
-                    (clean_app_id,),
-                )
-                row = cursor.fetchone()
-                if not row:
-                    raise HTTPException(status_code=404, detail="Student not found.")
-                (app, first, last, klass, status_, score, passport, gender, dob, state, lga,
-                 address, g_name, g_rel, g_phone, primary, p_from, p_to, junior, j_from, j_to,
-                 cutoff) = row
-                clean = lambda v: str(v).strip() if v is not None else ""
-                return {
-                    "success": True,
-                    "application_id": clean(app),
-                    "first_name": clean(first),
-                    "last_name": clean(last),
-                    "current_class": clean(klass),
-                    "target_class": clean(klass),
-                    "screening_status": clean(status_) or "Pending",
-                    "screening_score": score if score is not None else 0,
-                    "cutoff_mark": cutoff,
-                    "passport_base64": passport if passport else "",
-                    "gender": clean(gender),
-                    "date_of_birth": dob.isoformat() if dob else "",
-                    "state_of_origin": clean(state),
-                    "lga": clean(lga),
-                    "home_address": clean(address),
-                    "guardian_name": clean(g_name),
-                    "guardian_relationship": clean(g_rel),
-                    "guardian_phone": clean(g_phone),
-                    "prev_primary_school": clean(primary),
-                    "primary_from_year": p_from,
-                    "primary_to_year": p_to,
-                    "prev_junior_sec_school": clean(junior),
-                    "junior_sec_from_year": j_from,
-                    "junior_sec_to_year": j_to,
-                }
-    except HTTPException as http_ex:
-        raise http_ex
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database fetch error: {str(e)}")
-
-
-# ==========================================
-#  🔄 SCREENING EXERCISE SYNC ENDPOINT
+#  🔄 SCREENING EXERCISE SYNC ENDPOINT (used by the Java desktop app)
 # ==========================================
 @app.post("/api/v1/sync/screening-result", status_code=status.HTTP_200_OK)
 async def update_student_screening_result(
     payload: ScreeningUpdatePayload, request: Request
 ):
     api_key = request.headers.get("x-api-key") or request.headers.get("X-API-KEY")
-    if api_key and api_key != "hysuk_sync_token_2026":
+    if api_key != SYNC_API_KEY:
         raise HTTPException(
             status_code=401, detail="Invalid API sync key."
         )
