@@ -250,7 +250,7 @@ function fees() {
     $('#items').innerHTML = (d.items.length ? d.items.map(i => `<tr><td>${esc(i.fee_name)}</td><td class="num">${money(i.amount)}</td><td class="num">${money(i.paid)}</td>
       <td class="num ${i.balance > 0 ? 'debt' : ''}">${money(i.balance)}</td></tr>`).join('') : '<tr><td colspan="4" class="empty">No fees apply to this class this term.</td></tr>')
       + `<tr class="totals"><td>Total</td><td class="num">${money(d.totals.amount)}</td><td class="num">${money(d.totals.paid)}</td><td class="num">${money(d.totals.balance)}</td></tr>`;
-    $('#pf').innerHTML = opts(d.items.map(i => i.fee_name));
+    $('#pf').innerHTML = d.items.map(i => `<option value="${esc(i.fee_name)}"${i.balance > 0 ? '' : ' disabled'}>${esc(i.fee_name)} (owes ${money(i.balance)})</option>`).join('');
     $('#pays').innerHTML = d.payments.length ? d.payments.map(p => `<tr data-id="${p.payment_id}"><td>${esc(p.paid_on)}</td><td>${esc(p.fee_name)}</td>
       <td class="num">${money(p.amount_paid)}</td><td>${esc(p.method)}</td><td>${esc(p.reference || '')}</td><td><a href="/admin/api/fees/payments/${p.payment_id}/receipt" target="_blank">Receipt</a> <button class="link danger void">Void</button></td></tr>`).join('')
       : '<tr><td colspan="6" class="empty">No payments recorded yet.</td></tr>';
