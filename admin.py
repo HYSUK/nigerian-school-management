@@ -509,6 +509,21 @@ def fee_ledger(application_id: str, session: str = Query(pattern=SESSION_RE), te
 def record_payment(payload: PaymentIn, admin: dict = Depends(require("fees"))):
     with db() as cur:
         stu = _get_student(cur, payload.application_id)
+                cls = (stu["target_class"] or "").strip().upper().replace(" ", "")
+        rank = {"ALL": 0, cls[:2]: 1, cls: 2}
+        cur.execute("""SELECT class_level, amount FROM public.cloud_fee_structure
+                       WHERE session = %s AND term = %s AND fee_name = %s AND class_level IN ('ALL', %s, %s)""",
+                    (payload.session, payload.term, payload.fee_name.strip(), cls[:2], cls))
+        fee_rows = sorted(cur.fetchall(), key=lambda f: rank[f["class_level"]])
+        if not fee_rows:
+            raise HTTPException(422, f"'{payload.fee_name}' is not a fee for this student's class this term.")
+        cur.execute("""SELECT COALESCE(SUM(amount_paid), 0) AS paid FROM public.cloud_fee_payments
+                       WHERE application_id = %s AND session = %s AND term = %s AND fee_name = %s
+                         AND voided_at IS NULL""",
+                    (stu["application_id"], payload.session, payload.term, payload.fee_name.strip()))
+        left = fee_rows[-1]["amount"] - cur.fetchone()["paid"]
+        if payload.amount_paid > left:
+            raise HTTPException(422, f"That is more than the balance for {payload.fee_name} (NGN {left:,.2f} left). Check that you chose the right fee.")
         cur.execute(
             """INSERT INTO public.cloud_fee_payments
                  (application_id, session, term, fee_name, amount_paid, method, reference, paid_on, recorded_by)
