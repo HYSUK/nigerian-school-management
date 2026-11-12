@@ -502,6 +502,7 @@ def fee_ledger(application_id: str, session: str = Query(pattern=SESSION_RE), te
               "balance": owed.get(n, Decimal(0)) - paid.get(n, Decimal(0))}
              for n in sorted(set(owed) | set(paid))]
     totals = {k: sum((i[k] for i in items), Decimal(0)) for k in ("amount", "paid", "balance")}
+    totals["balance"] = sum((max(i["balance"], Decimal(0)) for i in items), Decimal(0))
     return {"success": True, "student": stu, "items": items, "payments": payments, "totals": totals}
 
 
@@ -509,10 +510,11 @@ def fee_ledger(application_id: str, session: str = Query(pattern=SESSION_RE), te
 def record_payment(payload: PaymentIn, admin: dict = Depends(require("fees"))):
     with db() as cur:
         stu = _get_student(cur, payload.application_id)
-                cls = (stu["target_class"] or "").strip().upper().replace(" ", "")
+        cls = (stu["target_class"] or "").strip().upper().replace(" ", "")
         rank = {"ALL": 0, cls[:2]: 1, cls: 2}
         cur.execute("""SELECT class_level, amount FROM public.cloud_fee_structure
-                       WHERE session = %s AND term = %s AND fee_name = %s AND class_level IN ('ALL', %s, %s)""",
+                       WHERE session = %s AND term = %s AND fee_name = %s
+                         AND class_level IN ('ALL', %s, %s)""",
                     (payload.session, payload.term, payload.fee_name.strip(), cls[:2], cls))
         fee_rows = sorted(cur.fetchall(), key=lambda f: rank[f["class_level"]])
         if not fee_rows:
@@ -523,7 +525,8 @@ def record_payment(payload: PaymentIn, admin: dict = Depends(require("fees"))):
                     (stu["application_id"], payload.session, payload.term, payload.fee_name.strip()))
         left = fee_rows[-1]["amount"] - cur.fetchone()["paid"]
         if payload.amount_paid > left:
-            raise HTTPException(422, f"That is more than the balance for {payload.fee_name} (NGN {left:,.2f} left). Check that you chose the right fee.")
+            raise HTTPException(422, f"That is more than the balance for {payload.fee_name} "
+                                     f"(NGN {max(left, 0):,.2f} left). Check that you chose the right fee.")
         cur.execute(
             """INSERT INTO public.cloud_fee_payments
                  (application_id, session, term, fee_name, amount_paid, method, reference, paid_on, recorded_by)
