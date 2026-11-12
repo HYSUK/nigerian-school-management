@@ -73,7 +73,7 @@
 const CSRF = document.querySelector('meta[name=csrf]').content;
 const AREAS = {{ areas|tojson }};
 const ROLE = {{ role|tojson }};
-const $ = (s, r = document) => r.querySelector(s);
+const $ = (s, r = document) => r.querySelector(s) || document.createElement('div');
 const main = $('#main');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = n => new Intl.NumberFormat('en-NG', {style:'currency', currency:'NGN'}).format(n || 0);
