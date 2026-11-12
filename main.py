@@ -25,7 +25,7 @@ DEFAULT_SUPABASE_URI = (
 )
 SUPABASE_DB_URI = os.getenv("DATABASE_URL", DEFAULT_SUPABASE_URI)
 
-# Key the Java desktop app sends with its sync calls (set SYNC_API_KEY on Render to change it)
+# Key the Java desktop app sends with its sync calls
 SYNC_API_KEY = os.getenv("SYNC_API_KEY", "hysuk_sync_token_2026")
 
 # Connection pooling for local SQL Server
@@ -35,6 +35,21 @@ app = FastAPI(
     title="Nigerian Hybrid School Management Cloud Gateway",
     description="Cleaned & Polished Supabase Cloud-Native Gateway Server with MSSQL Compatibility",
     version="3.2.0",
+)
+
+# --- SECURE DATABASE CONNECTION STRING ---
+SQL_SERVER_HOST = os.getenv("SQL_SERVER_HOST", "localhost,1433")
+SQL_SERVER_DB = os.getenv("SQL_SERVER_DB", "SchoolManagementDB")
+SQL_SERVER_USER = os.getenv("SQL_SERVER_USER", "sa")
+SQL_SERVER_PASSWORD = os.getenv("SQL_SERVER_PASSWORD", "")
+
+DB_CONN_STR = (
+    "DRIVER={ODBC Driver 17 for SQL Server};"
+    f"SERVER={SQL_SERVER_HOST};"
+    f"DATABASE={SQL_SERVER_DB};"
+    f"UID={SQL_SERVER_USER};"
+    f"PWD={SQL_SERVER_PASSWORD};"
+    "Encrypt=no;"
 )
 
 app.include_router(admin_router)
