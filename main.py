@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional
 import uuid
 from admin import router as admin_router
+from online_cards import public_router as online_cards_router, admin_gen_router as card_gen_router
 from admin_payments import router as payments_router
 from admin_cards import router as cards_router, card_problem, guard_check, guard_fail, guard_clear
 from admission_letter import router as letter_router
@@ -54,6 +55,8 @@ DB_CONN_STR = (
 
 app.include_router(admin_router)
 app.include_router(cards_router)
+app.include_router(online_cards_router)
+app.include_router(card_gen_router)
 app.include_router(letter_router)
 app.include_router(student_router)
 app.include_router(payments_router)

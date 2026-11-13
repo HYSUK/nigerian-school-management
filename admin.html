@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="csrf" content="{{ csrf }}">
+<title>School admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root { --paper:#f2f5f4; --panel:#fff; --ink:#15242b; --muted:#5a6b72; --line:#d3dcde; --brand:#12506b;
+          --brand-soft:#e3eff4; --pass:#1b7a4b; --fail:#b5382f; --wait:#8a5a00; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 "Atkinson Hyperlegible", system-ui, sans-serif; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 20px;
+           background:var(--brand); color:#fff; }
+  header b { font-size:1.05rem; }
+  header span { opacity:.85; margin-right:12px; }
+  header button { background:transparent; color:#fff; border:1px solid #ffffff88; }
+  .shell { display:grid; grid-template-columns:190px 1fr; min-height:calc(100vh - 52px); }
+  nav { padding:16px 10px; border-right:1px solid var(--line); background:var(--panel); }
+  nav button { display:block; width:100%; text-align:left; padding:9px 12px; margin-bottom:4px; border:0; border-radius:4px;
+               background:none; color:var(--ink); font:inherit; cursor:pointer; }
+  nav button[aria-current=page] { background:var(--brand-soft); color:var(--brand); font-weight:700; }
+  main { padding:22px 26px 60px; min-width:0; max-width:1100px; }
+  h1 { font-size:1.4rem; margin:0 0 14px; }
+  h2 { font-size:1.1rem; margin:28px 0 10px; }
+  .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:end; margin-bottom:14px; }
+  .bar label { display:grid; gap:3px; font-weight:700; font-size:.85rem; }
+  input, select, textarea { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:4px; background:#fff; color:var(--ink); }
+  textarea { width:100%; }
+  input[type=number] { width:90px; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, summary:focus-visible { outline:3px solid #7fb4cc; outline-offset:1px; }
+  button { font:inherit; padding:8px 14px; border-radius:4px; border:1px solid var(--line); background:#fff; cursor:pointer; color:var(--ink); }
+  button.primary { background:var(--brand); border-color:var(--brand); color:#fff; font-weight:700; }
+  button.link { border:0; background:none; color:var(--brand); padding:4px 6px; text-decoration:underline; }
+  button.danger { color:var(--fail); }
+  button:disabled { opacity:.6; cursor:wait; }
+  .tablewrap { overflow-x:auto; background:var(--panel); border:1px solid var(--line); border-radius:6px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { padding:8px 12px; text-align:left; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { font-weight:700; background:#f8faf9; }
+  tr:last-child td { border-bottom:0; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .chip { display:inline-block; padding:1px 9px; border-radius:99px; font-size:.85rem; font-weight:700; border:1px solid currentColor; }
+  .Passed { color:var(--pass); } .Failed { color:var(--fail); } .Pending { color:var(--wait); }
+  .muted { color:var(--muted); }
+  .empty { padding:22px; color:var(--muted); }
+  .totals td { font-weight:700; background:#f8faf9; }
+  .debt { color:var(--fail); font-weight:700; }
+  details { margin-top:18px; } summary { cursor:pointer; font-weight:700; padding:4px 0; }
+  #toast { position:fixed; right:18px; bottom:18px; max-width:360px; padding:11px 16px; border-radius:5px; color:#fff;
+           background:var(--pass); display:none; box-shadow:0 2px 10px #0003; }
+  #toast.bad { background:var(--fail); }
+  @media (max-width:760px) { .shell { grid-template-columns:1fr; } nav { display:flex; overflow-x:auto; border-right:0; border-bottom:1px solid var(--line); }
+    nav button { width:auto; white-space:nowrap; } main { padding:16px; } }
+  @media (prefers-reduced-motion:no-preference) { #toast { animation:up .2s ease-out; } @keyframes up { from { transform:translateY(8px); opacity:0; } } }
+</style>
+</head>
+<body>
+<header>
+  <b>School admin</b>
+  <div><span>{{ username }} ({{ role }})</span><button id="out">Sign out</button></div>
+</header>
+<div class="shell">
+  <nav id="nav" aria-label="Sections"></nav>
+  <main id="main"></main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const CSRF = document.querySelector('meta[name=csrf]').content;
+const AREAS = {{ areas|tojson }};
+const ROLE = {{ role|tojson }};
+const $ = (s, r = document) => r.querySelector(s) || document.createElement('div');
+const main = $('#main');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => new Intl.NumberFormat('en-NG', {style:'currency', currency:'NGN'}).format(n || 0);
+const CLASSES = ['JS1','JS2','JS3','SS1','SS2','SS3'];
+const now = new Date(), yr = now.getFullYear();
+const period = { session: now.getMonth() >= 8 ? `${yr}/${yr + 1}` : `${yr - 1}/${yr}`, term: 'First' };
+
+let toastTimer;
+function toast(msg, bad) {
+  const t = $('#toast'); t.textContent = msg; t.className = bad ? 'bad' : ''; t.style.display = 'block';
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = 'none', bad ? 6000 : 2800);
+}
+async function api(method, url, body) {
+  const res = await fetch(url, { method, credentials:'same-origin',
+    headers:{'Content-Type':'application/json', 'X-CSRF-Token':CSRF}, body: body ? JSON.stringify(body) : undefined });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { location.href = '/admin/login'; throw new Error('Signed out'); }
+  if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Check the fields and try again.');
+  return data;
+}
+const run = fn => async (...a) => { try { await fn(...a); } catch (e) { toast(e.message, true); } };
+const opts = (list, sel) => list.map(v => `<option${v === sel ? ' selected' : ''}>${esc(v)}</option>`).join('');
+
+function periodBar(onChange) {
+  return `<div class="bar">
+    <label>Session<input id="ps" value="${esc(period.session)}" pattern="\\d{4}/\\d{4}" size="9"></label>
+    <label>Term<select id="pt">${opts(['First','Second','Third'], period.term)}</select></label></div>`;
+}
+function bindPeriod(onChange) {
+  $('#ps').onchange = e => { period.session = e.target.value.trim(); onChange(); };
+  $('#pt').onchange = e => { period.term = e.target.value; onChange(); };
+}
+function bindPicker(input, list) {
+  let t;
+  input.addEventListener('input', () => { clearTimeout(t); t = setTimeout(async () => {
+    const q = input.value.trim(); if (q.length < 2) return;
+    try { const d = await api('GET', '/admin/api/students?limit=10&q=' + encodeURIComponent(q));
+      list.innerHTML = d.students.map(s => `<option value="${esc(s.application_id)}">${esc(s.first_name)} ${esc(s.last_name)} · ${esc(s.target_class)}</option>`).join('');
+    } catch (e) {} }, 250); });
+}
+const studentPicker = () => `<label>Student<input id="sid" list="sl" placeholder="Type a name or application ID" size="34" autocomplete="off"></label><datalist id="sl"></datalist>`;
+
+/* ---------- Screening ---------- */
+function screening() {
+  main.innerHTML = `<h1>Screening results</h1>
+    <div class="bar">
+      <label>Search<input id="q" type="search" placeholder="Name or application ID" size="28"></label>
+      <label>Class<select id="cls"><option value="">All</option>${opts(CLASSES)}</select></label>
+      <label>Status<select id="st"><option value="">All</option><option>Passed</option><option>Failed</option><option>Pending</option></select></label>
+    </div>
+    <div class="tablewrap"><table><thead><tr><th>Application ID</th><th>Name</th><th>Class</th><th>Score</th><th>Cut-off</th><th>Status</th><th></th></tr></thead>
+      <tbody id="rows"></tbody></table></div>
+    <p id="count" class="muted"></p>
+    <details><summary>Enter many results at once</summary>
+      <p class="muted">One per line: application ID, score. Uses each student's current cut-off (50 if none is set).</p>
+      <textarea id="bulk" rows="6" placeholder="SS/2026/AB12C, 64&#10;JS/2026/9F3KD, 41"></textarea>
+      <p><button id="bulkgo" class="primary">Apply results</button></p><div id="bulkout"></div></details>`;
+  const load = run(async () => {
+    const p = new URLSearchParams({ q:$('#q').value, target_class:$('#cls').value, status:$('#st').value, limit:50 });
+    const d = await api('GET', '/admin/api/students?' + p);
+    $('#rows').innerHTML = d.students.length ? d.students.map(s => {
+      const st = s.screening_status && s.screening_status !== 'Pending' && s.screening_score != null ? s.screening_status : 'Pending';
+      return `<tr data-id="${esc(s.application_id)}"><td>${esc(s.application_id)}</td><td>${esc(s.first_name)} ${esc(s.last_name)}</td>
+        <td>${esc(s.target_class)}</td><td><input type="number" min="0" max="100" class="sc" value="${s.screening_score ?? ''}"></td>
+        <td><input type="number" min="0" max="100" class="co" value="${s.cutoff_mark ?? 50}"></td>
+        <td><span class="chip ${esc(st)}">${esc(st)}</span></td><td><button class="save">Save</button> <button class="link reset">New password</button></td></tr>`; }).join('')
+      : '<tr><td colspan="7" class="empty">No students match. Clear a filter or check the spelling.</td></tr>';
+    $('#count').textContent = d.total > 50 ? `Showing 50 of ${d.total}. Narrow the search to see the rest.` : `${d.total} student${d.total === 1 ? '' : 's'}`;
+  });
+  let t; ['#q','#cls','#st'].forEach(s => $(s).addEventListener('input', () => { clearTimeout(t); t = setTimeout(load, 250); }));
+  $('#rows').onclick = run(async e => {
+      if (e.target.classList.contains('reset')) {
+      const id = e.target.closest('tr').dataset.id;
+      if (!confirm(`Issue a new password for ${id}? The old one stops working.`)) return;
+      const d = await api('POST', '/admin/api/students/reset-password', { application_id: id });
+      alert(`New password for ${d.application_id}:\n\n${d.new_password}\n\nGive it to the parent in person. It is not shown again.`);
+      return;
+    }
+    if (!e.target.classList.contains('save')) return;
+    const tr = e.target.closest('tr'), score = tr.querySelector('.sc').value;
+    if (score === '') throw new Error('Enter a score first.');
+    e.target.disabled = true;
+    try { const d = await api('POST', '/admin/api/screening', { entries:[{ application_id:tr.dataset.id, score:+score, cutoff:+tr.querySelector('.co').value }] });
+      const r = d.updated[0]; tr.querySelector('.chip').className = 'chip ' + r.screening_status; tr.querySelector('.chip').textContent = r.screening_status;
+      toast(`${tr.dataset.id}: ${r.screening_status}`); } finally { e.target.disabled = false; }
+  });
+  $('#bulkgo').onclick = run(async () => {
+    const entries = $('#bulk').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+      const [id, sc] = l.split(/[,\t]+/).map(x => x.trim()); return { application_id:id, score:Number(sc) }; });
+    if (!entries.length || entries.some(e => !e.application_id || !Number.isInteger(e.score))) throw new Error('Each line needs an application ID and a whole-number score.');
+    const d = await api('POST', '/admin/api/screening', { entries });
+    $('#bulkout').innerHTML = `<p>${d.updated.length} updated.${d.not_found.length ? ` <span class="debt">Not found: ${d.not_found.map(esc).join(', ')}</span>` : ''}</p>`;
+    toast(`${d.updated.length} results saved`); load();
+  });
+  load();
+}
+
+/* ---------- Assessments ---------- */
+function assessments() {
+  main.innerHTML = `<h1>Assessments</h1>${periodBar()}
+    <div class="bar">${studentPicker()}<button id="load" class="primary">Load scores</button></div>
+    <div id="who" class="muted"></div>
+    <div class="tablewrap"><table><thead><tr><th>Subject</th><th>Type</th><th class="num">Score</th><th class="num">Out of</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+    <h2>Add or change a score</h2>
+    <div class="bar">
+      <label>Subject<input id="sub" list="subs" placeholder="Mathematics"></label>
+      <datalist id="subs"><option>Mathematics</option><option>English Language</option><option>Basic Science</option><option>Civic Education</option><option>Biology</option><option>Chemistry</option><option>Physics</option></datalist>
+      <label>Type<input id="typ" list="typs" value="CA1" size="8"></label>
+      <datalist id="typs"><option>CA1</option><option>CA2</option><option>Exam</option></datalist>
+      <label>Score<input id="scr" type="number" min="0" step="0.5"></label>
+      <label>Out of<input id="max" type="number" min="1" value="100"></label>
+      <button id="add" class="primary">Save score</button></div>
+    <p class="muted">Saving the same subject and type again replaces the earlier score.</p>`;
+  bindPicker($('#sid'), $('#sl')); bindPeriod(() => $('#sid').value && load());
+  const load = run(async () => {
+    const id = $('#sid').value.trim(); if (!id) throw new Error('Choose a student first.');
+    const d = await api('GET', `/admin/api/assessments?application_id=${encodeURIComponent(id)}&session=${encodeURIComponent(period.session)}&term=${period.term}`);
+    $('#who').textContent = `${d.student.first_name} ${d.student.last_name} · ${d.student.target_class} · ${period.session}, ${period.term} term`;
+    $('#rows').innerHTML = d.assessments.length ? d.assessments.map(a => `<tr data-id="${a.assessment_id}" data-sub="${esc(a.subject)}" data-typ="${esc(a.assessment_type)}" data-scr="${a.score}" data-max="${a.max_score}">
+      <td>${esc(a.subject)}</td><td>${esc(a.assessment_type)}</td><td class="num">${a.score}</td><td class="num">${a.max_score}</td>
+      <td><button class="link edit">Edit</button><button class="link danger del">Delete</button></td></tr>`).join('')
+      : '<tr><td colspan="5" class="empty">No scores yet for this term. Add the first one below.</td></tr>';
+  });
+  $('#load').onclick = load;
+  $('#rows').onclick = run(async e => {
+    const tr = e.target.closest('tr'); if (!tr || !tr.dataset.id) return;
+    if (e.target.classList.contains('edit')) { $('#sub').value = tr.dataset.sub; $('#typ').value = tr.dataset.typ; $('#scr').value = tr.dataset.scr; $('#max').value = tr.dataset.max; $('#scr').focus(); }
+    if (e.target.classList.contains('del') && confirm(`Delete ${tr.dataset.sub} ${tr.dataset.typ}?`)) { await api('DELETE', '/admin/api/assessments/' + tr.dataset.id); toast('Deleted'); load(); }
+  });
+  $('#add').onclick = run(async () => {
+    const id = $('#sid').value.trim(); if (!id) throw new Error('Choose a student first.');
+    if (!$('#sub').value.trim() || $('#scr').value === '') throw new Error('Enter a subject and a score.');
+    await api('POST', '/admin/api/assessments', { entries:[{ application_id:id, session:period.session, term:period.term, subject:$('#sub').value,
+      assessment_type:$('#typ').value, score:+$('#scr').value, max_score:+$('#max').value }] });
+    toast('Score saved'); $('#scr').value = ''; load();
+  });
+}
+
+/* ---------- Fees ---------- */
+function fees() {
+  main.innerHTML = `<h1>Fees</h1>${periodBar()}
+    <h2>Fee structure</h2>
+    <div class="tablewrap"><table><thead><tr><th>Applies to</th><th>Fee</th><th class="num">Amount</th><th></th></tr></thead><tbody id="fs"></tbody></table></div>
+    <div class="bar" style="margin-top:12px">
+      <label>Applies to<select id="fc"><option value="ALL">All classes</option><option value="JS">All junior (JS)</option><option value="SS">All senior (SS)</option>${opts(CLASSES)}</select></label>
+      <label>Fee<input id="fn" placeholder="Tuition" size="18"></label>
+      <label>Amount (₦)<input id="fa" type="number" min="1" step="0.01"></label>
+      <button id="fadd" class="primary">Save fee</button></div>
+    <h2>Student payments</h2>
+    <div class="bar">${studentPicker()}<button id="load" class="primary">Load account</button></div>
+    <div id="who" class="muted"></div>
+    <div class="tablewrap"><table><thead><tr><th>Fee</th><th class="num">Charged</th><th class="num">Paid</th><th class="num">Balance</th></tr></thead><tbody id="items"></tbody></table></div>
+    <h2>Record a payment</h2>
+    <div class="bar">
+      <label>Fee<select id="pf"></select></label>
+      <label>Amount (₦)<input id="pa" type="number" min="1" step="0.01"></label>
+      <label>Method<select id="pm"><option>Cash</option><option>Bank transfer</option><option>POS</option><option>Online</option></select></label>
+      <label>Reference<input id="pr" placeholder="Teller or transfer no." size="18"></label>
+      <label>Date<input id="pd" type="date"></label>
+      <button id="padd" class="primary">Record payment</button></div>
+    <h2>Payments received</h2>
+    <div class="tablewrap"><table><thead><tr><th>Date</th><th>Fee</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th></th></tr></thead><tbody id="pays"></tbody></table></div>`;
+  bindPicker($('#sid'), $('#sl'));
+  const loadStructure = run(async () => {
+    const d = await api('GET', `/admin/api/fees/structure?session=${encodeURIComponent(period.session)}&term=${period.term}`);
+    $('#fs').innerHTML = d.fees.length ? d.fees.map(f => `<tr data-id="${f.fee_id}"><td>${esc(f.class_level)}</td><td>${esc(f.fee_name)}</td>
+      <td class="num">${money(f.amount)}</td><td><button class="link danger fdel">Remove</button></td></tr>`).join('')
+      : '<tr><td colspan="4" class="empty">No fees set for this term. Add tuition below.</td></tr>';
+  });
+  const loadLedger = run(async () => {
+    const id = $('#sid').value.trim(); if (!id) throw new Error('Choose a student first.');
+    const d = await api('GET', `/admin/api/fees/ledger?application_id=${encodeURIComponent(id)}&session=${encodeURIComponent(period.session)}&term=${period.term}`);
+    $('#who').textContent = `${d.student.first_name} ${d.student.last_name} · ${d.student.target_class} · ${period.session}, ${period.term} term`;
+    $('#items').innerHTML = (d.items.length ? d.items.map(i => `<tr><td>${esc(i.fee_name)}</td><td class="num">${money(i.amount)}</td><td class="num">${money(i.paid)}</td>
+      <td class="num ${i.balance > 0 ? 'debt' : ''}">${money(i.balance)}</td></tr>`).join('') : '<tr><td colspan="4" class="empty">No fees apply to this class this term.</td></tr>')
+      + `<tr class="totals"><td>Total</td><td class="num">${money(d.totals.amount)}</td><td class="num">${money(d.totals.paid)}</td><td class="num">${money(d.totals.balance)}</td></tr>`;
+    $('#pf').innerHTML = d.items.map(i => `<option value="${esc(i.fee_name)}"${i.balance > 0 ? '' : ' disabled'}>${esc(i.fee_name)} (owes ${money(i.balance)})</option>`).join('');
+    $('#pays').innerHTML = d.payments.length ? d.payments.map(p => `<tr data-id="${p.payment_id}"><td>${esc(p.paid_on)}</td><td>${esc(p.fee_name)}</td>
+      <td class="num">${money(p.amount_paid)}</td><td>${esc(p.method)}</td><td>${esc(p.reference || '')}</td><td><a href="/admin/api/fees/payments/${p.payment_id}/receipt" target="_blank">Receipt</a> <button class="link danger void">Void</button></td></tr>`).join('')
+      : '<tr><td colspan="6" class="empty">No payments recorded yet.</td></tr>';
+  });
+  bindPeriod(() => { loadStructure(); if ($('#sid').value.trim()) loadLedger(); });
+  $('#fadd').onclick = run(async () => {
+    if (!$('#fn').value.trim() || !$('#fa').value) throw new Error('Enter a fee name and an amount.');
+    await api('POST', '/admin/api/fees/structure', { session:period.session, term:period.term, class_level:$('#fc').value, fee_name:$('#fn').value, amount:+$('#fa').value });
+    toast('Fee saved'); $('#fn').value = ''; $('#fa').value = ''; loadStructure(); if ($('#sid').value.trim()) loadLedger();
+  });
+  $('#fs').onclick = run(async e => { if (e.target.classList.contains('fdel') && confirm('Remove this fee? Payments already recorded stay on file.')) {
+    await api('DELETE', '/admin/api/fees/structure/' + e.target.closest('tr').dataset.id); toast('Fee removed'); loadStructure(); } });
+  $('#load').onclick = loadLedger;
+  $('#padd').onclick = run(async () => {
+    if (!$('#pf').value || !$('#pa').value) throw new Error('Load a student, then enter a fee and an amount.');
+    await api('POST', '/admin/api/fees/payments', { application_id:$('#sid').value.trim(), session:period.session, term:period.term, fee_name:$('#pf').value,
+      amount_paid:+$('#pa').value, method:$('#pm').value, reference:$('#pr').value || null, paid_on:$('#pd').value || null });
+    toast('Payment recorded'); $('#pa').value = ''; $('#pr').value = ''; loadLedger();
+  });
+  $('#pays').onclick = run(async e => { if (e.target.classList.contains('void') && confirm('Void this payment? It stays in the audit log.')) {
+    await api('DELETE', '/admin/api/fees/payments/' + e.target.closest('tr').dataset.id); toast('Payment voided'); loadLedger(); } });
+  loadStructure();
+}
+
+     /* ---------- Scratch cards ---------- */
+     function cards() {
+       const chip = { Unused:'Pending', Sold:'Passed', Used:'muted', Voided:'Failed' };
+       const settingsPanel = ROLE === 'admin' ? `<h2>Card settings</h2>
+         <div class="bar">
+           <label><span><input type="checkbox" id="rs"> Only sold cards can be used</span></label>
+           <label>Sales mode<select id="sm"><option value="printed">Printed cards</option><option value="online">Online</option><option value="both">Both</option></select></label>
+           <label>Card price (₦)<input id="cp" type="number" min="0" step="0.01"></label>
+           <button id="ssave" class="primary">Save settings</button></div>
+         <p class="muted">Online card sales are not built yet. Keep this on Printed for now.</p>` : '';
+       main.innerHTML = `<h1>Scratch cards</h1>
+         <p id="sum" class="muted"></p>
+         <div class="bar">
+           <label>Search<input id="q" type="search" placeholder="Serial, buyer or application ID" size="28"></label>
+           <label>Status<select id="st"><option value="">All</option>${opts(['Unused','Sold','Used','Voided'])}</select></label>
+           <label>Section<select id="sec"><option value="">All</option><option>JS</option><option>SS</option></select></label>
+           <label>Batch<input id="bt" list="bl" size="14"></label><datalist id="bl"></datalist>
+         </div>
+         <div class="tablewrap"><table><thead><tr><th>Serial</th><th>Section</th><th>Batch</th><th>Status</th><th>Sold to</th><th>Sold</th><th>Used by</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+         <p id="count" class="muted"></p>
+         <h2>Record sales</h2>
+         <p class="muted">Only cards marked as sold can be used by parents. Type or scan serial numbers, one per line.</p>
+         <textarea id="serials" rows="4" placeholder="123456789012"></textarea>
+         <div class="bar" style="margin-top:8px">
+           <label>Sold to<input id="to" placeholder="Office or agent name"></label>
+           <label>Price each (₦)<input id="pr" type="number" min="0" step="0.01"></label>
+           <button id="sell" class="primary">Mark as sold</button></div>
+         <details><summary>Sell a whole batch to an agent</summary>
+           <div class="bar" style="margin-top:8px">
+             <label>Batch<input id="bb" list="bl" size="14"></label>
+             <label>Sold to<input id="bto"></label>
+             <label>Price each (₦)<input id="bpr" type="number" min="0" step="0.01"></label>
+             <button id="sellbatch" class="primary">Sell batch</button></div></details>
+             
+         ${settingsPanel}`;
+       const load = run(async () => {
+         const [s, d] = await Promise.all([
+           api('GET', '/admin/api/cards/summary'),
+           api('GET', '/admin/api/cards?' + new URLSearchParams({ q:$('#q').value, status:$('#st').value, section:$('#sec').value, batch:$('#bt').value, limit:50 }))]);
+         $('#sum').textContent = `Unused ${s.counts.Unused} · Sold ${s.counts.Sold} · Used ${s.counts.Used} · Voided ${s.counts.Voided} · Sales ${money(s.revenue)}`;
+         $('#bl').innerHTML = s.batches.map(b => `<option value="${esc(b)}">`).join('');
+         $('#rows').innerHTML = d.cards.length ? d.cards.map(c => `<tr data-serial="${esc(c.serial_number)}">
+           <td>${esc(c.serial_number)}</td><td>${esc(c.school_section)}</td><td>${esc(c.batch_number)}</td>
+           <td><span class="chip ${chip[c.status]}">${c.status}</span></td><td>${esc(c.sold_to || '')}</td>
+           <td>${c.sold_at ? esc(c.sold_at.slice(0, 10)) : ''}</td><td>${esc(c.used_by_application_id || '')}</td>
+           <td>${c.status === 'Unused' || c.status === 'Sold' ? '<button class="link danger void">Void</button>' : ''}</td></tr>`).join('')
+           : '<tr><td colspan="8" class="empty">No cards match.</td></tr>';
+         $('#count').textContent = d.total > 50 ? `Showing 50 of ${d.total}. Narrow the search to see the rest.` : `${d.total} card${d.total === 1 ? '' : 's'}`;
+       });
+       const report = d => toast(`${d.sold} marked as sold` + (d.skipped.length ? `, ${d.skipped.length} skipped (${d.skipped.slice(0, 3).map(x => x.serial + ': ' + x.reason).join('; ')})` : ''), d.sold === 0 && d.skipped.length > 0);
+       $('#sell').onclick = run(async () => {
+         const serials = $('#serials').value.split(/\s+/).filter(Boolean);
+         if (!serials.length || !$('#to').value.trim() || $('#pr').value === '') throw new Error('Enter the serial numbers, who they were sold to, and the price.');
+         report(await api('POST', '/admin/api/cards/sell', { serials, sold_to:$('#to').value, price:+$('#pr').value }));
+         $('#serials').value = ''; load();
+       });
+       $('#sellbatch').onclick = run(async () => {
+         if (!$('#bb').value.trim() || !$('#bto').value.trim() || $('#bpr').value === '') throw new Error('Enter the batch, who it is sold to, and the price.');
+         if (!confirm(`Mark every unsold card in batch ${$('#bb').value} as sold?`)) return;
+         report(await api('POST', '/admin/api/cards/sell', { batch:$('#bb').value.trim(), sold_to:$('#bto').value, price:+$('#bpr').value })); load();
+       });
+       $('#rows').onclick = run(async e => {
+         if (!e.target.classList.contains('void')) return;
+         const serial = e.target.closest('tr').dataset.serial, reason = prompt(`Why void card ${serial}?`);
+         if (!reason) return;
+         await api('POST', '/admin/api/cards/void', { serial, reason }); toast('Card voided'); load();
+       });
+       if (ROLE === 'admin') {
+         api('GET', '/admin/api/cards/settings').then(s => { $('#rs').checked = s.require_sold_card; $('#sm').value = s.card_sales_mode; $('#cp').value = s.card_price; }).catch(() => {});
+         $('#ssave').onclick = run(async () => {
+           await api('POST', '/admin/api/cards/settings', { require_sold_card:$('#rs').checked, card_sales_mode:$('#sm').value, card_price:+($('#cp').value || 0) });
+           toast('Settings saved');
+         });
+       }
+       if (ROLE === 'admin') {
+         api('GET', '/admin/api/cards/settings').then(s => { $('#rs').checked = s.require_sold_card; $('#sm').value = s.card_sales_mode; $('#cp').value = s.card_price; }).catch(() => {});
+         $('#ssave').onclick = run(async () => {
+           await api('POST', '/admin/api/cards/settings', { require_sold_card:$('#rs').checked, card_sales_mode:$('#sm').value, card_price:+($('#cp').value || 0) });
+           toast('Settings saved');
+         });
+       }
+
+       // --- NEW: Scratch Card Batch Generator UI & Handler ---
+       main.innerHTML += `
+         <h2>Generate new card batch</h2>
+         <div class="bar">
+           <label>Batch name<input id="gb" placeholder="2026-JS-BATCH-02" size="18"></label>
+           <label>Section<select id="gsec"><option value="JS">JS</option><option value="SS">SS</option></select></label>
+           <label>Quantity<input id="gqty" type="number" min="1" max="5000" value="50"></label>
+           <button id="genbtn" class="primary">Generate batch</button>
+           <a id="dlcsv" href="#" style="display:none; margin-left:10px; font-weight:700;">Download CSV</a>
+         </div>
+       `;
+
+       $('#genbtn').onclick = run(async () => {
+         const batch_number = $('#gb').value.trim();
+         const school_section = $('#gsec').value;
+         const quantity = +$('#gqty').value;
+         if (!batch_number || quantity < 1) throw new Error('Enter a batch name and quantity.');
+         $('#genbtn').disabled = true;
+         try {
+           const d = await api('POST', '/admin/api/cards/generate', { batch_number, school_section, quantity });
+           toast(`Generated ${d.created} cards in ${d.batch_number}`);
+           const dl = $('#dlcsv');
+           dl.href = d.download_url;
+           dl.style.display = 'inline';
+           $('#gb').value = '';
+           load();
+         } finally {
+           $('#genbtn').disabled = false;
+         }
+       });
+       
+       let t; ['#q', '#st', '#sec', '#bt'].forEach(s => $(s).addEventListener('input', () => { clearTimeout(t); t = setTimeout(load, 250); }));
+       load();
+     }
+/* ---------- Payments overview ---------- */
+function payments() {
+  const box = 'class="tablewrap" style="padding:10px 18px"';
+  main.innerHTML = `<h1>Payments overview</h1>${periodBar()}
+    <div id="kpi" class="bar"></div>
+    <h2>Collected by method</h2>
+    <div class="tablewrap"><table><thead><tr><th>Method</th><th class="num">Payments</th><th class="num">Total</th></tr></thead><tbody id="bm"></tbody></table></div>
+    <h2>Collected by day</h2>
+    <div class="tablewrap"><table><thead><tr><th>Date</th><th class="num">Payments</th><th class="num">Total</th></tr></thead><tbody id="bd"></tbody></table></div>
+    <h2>Who still owes</h2>
+    <div class="bar"><label>Class<select id="dc"><option value="">All</option>${opts(CLASSES)}</select></label><a id="csv" href="#">Download CSV</a></div>
+    <div class="tablewrap"><table><thead><tr><th>Application ID</th><th>Name</th><th>Class</th><th class="num">Charged</th><th class="num">Paid</th><th class="num">Balance</th></tr></thead><tbody id="db"></tbody></table></div>`;
+  const q = () => `session=${encodeURIComponent(period.session)}&term=${period.term}&target_class=${$('#dc').value}`;
+  const empty = (cols, msg) => `<tr><td colspan="${cols}" class="empty">${msg}</td></tr>`;
+  const load = run(async () => {
+    const [o, d] = await Promise.all([api('GET', `/admin/api/fees/overview?${q()}`), api('GET', `/admin/api/fees/debtors?${q()}`)]);
+    $('#kpi').innerHTML = [['Collected', o.collected], ['Expected', o.expected], ['Outstanding', o.outstanding], ['Card sales', o.card_sales]]
+      .map(([l, v]) => `<div ${box}><span class="muted">${l}</span><br><b style="font-size:1.25rem">${money(v)}</b></div>`).join('');
+    $('#bm').innerHTML = o.by_method.length ? o.by_method.map(m => `<tr><td>${esc(m.method)}</td><td class="num">${m.n}</td><td class="num">${money(m.total)}</td></tr>`).join('') : empty(3, 'No payments recorded for this term yet.');
+    $('#bd').innerHTML = o.by_day.length ? o.by_day.map(m => `<tr><td>${esc(m.paid_on)}</td><td class="num">${m.n}</td><td class="num">${money(m.total)}</td></tr>`).join('') : empty(3, 'No payments recorded for this term yet.');
+    $('#db').innerHTML = d.debtors.length ? d.debtors.map(s => `<tr><td>${esc(s.application_id)}</td><td>${esc(s.name)}</td><td>${esc(s.class)}</td><td class="num">${money(s.owed)}</td><td class="num">${money(s.paid)}</td><td class="num debt">${money(s.balance)}</td></tr>`).join('') : empty(6, 'Nobody owes anything for this term, or no fees are set yet.');
+    $('#csv').href = `/admin/api/fees/debtors.csv?${q()}`;
+  });
+  bindPeriod(load); $('#dc').onchange = load; load();
+}
+
+     /* ---------- Shell ---------- */
+const VIEWS = { screening:['Screening results', screening], assessments:['Assessments', assessments], fees:['Fees', fees], payments:['Payments', payments], cards:['Scratch cards', cards] };
+const order = ['screening', 'assessments', 'fees', 'payments', 'cards'].filter(a => AREAS.includes(a === 'payments' ? 'fees' : a));
+$('#nav').innerHTML = order.map(a => `<button data-v="${a}">${VIEWS[a][0]}</button>`).join('');
+function show(v) {
+  document.querySelectorAll('#nav button').forEach(b => b.dataset.v === v ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+  VIEWS[v][1]();
+}
+$('#nav').onclick = e => e.target.dataset.v && show(e.target.dataset.v);
+$('#out').onclick = async () => { await fetch('/admin/api/logout', { method:'POST', credentials:'same-origin' }); location.href = '/admin/login'; };
+show(order[0]);
+</script>
+</body>
+</html>
