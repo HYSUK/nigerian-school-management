@@ -1,9 +1,9 @@
+import hmac
 import os
 from datetime import datetime
 from typing import Optional
 import uuid
 from admin import router as admin_router
-from online_cards import public_router as online_cards_router, admin_gen_router as card_gen_router
 from admin_payments import router as payments_router
 from admin_cards import router as cards_router, card_problem, guard_check, guard_fail, guard_clear
 from admission_letter import router as letter_router
@@ -27,7 +27,7 @@ DEFAULT_SUPABASE_URI = (
 SUPABASE_DB_URI = os.getenv("DATABASE_URL", DEFAULT_SUPABASE_URI)
 
 # Key the Java desktop app sends with its sync calls
-SYNC_API_KEY = os.getenv("SYNC_API_KEY", "hysuk_sync_token_2026")
+SYNC_API_KEY = os.getenv("SYNC_API_KEY", "")
 
 # Connection pooling for local SQL Server
 pyodbc.pooling = True
@@ -55,8 +55,6 @@ DB_CONN_STR = (
 
 app.include_router(admin_router)
 app.include_router(cards_router)
-app.include_router(online_cards_router)
-app.include_router(card_gen_router)
 app.include_router(letter_router)
 app.include_router(student_router)
 app.include_router(payments_router)
@@ -87,16 +85,6 @@ async def global_generic_exception_handler(request: Request, exc: Exception):
         content={"success": False, "detail": "Something went wrong on the server. Please try again."}
     )
 
-
-# 🔒 Local SQL Server Database Connection String (Used for desktop app sync)
-DB_CONN_STR = (
-    "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=localhost,1433;"
-    "DATABASE=SchoolManagementDB;"
-    "UID=sa;"
-    "PWD=hysuk;"
-    "Encrypt=no;"
-)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
@@ -280,7 +268,7 @@ async def update_student_screening_result(
     payload: ScreeningUpdatePayload, request: Request
 ):
     api_key = request.headers.get("x-api-key") or request.headers.get("X-API-KEY")
-    if api_key != SYNC_API_KEY:
+    if not SYNC_API_KEY or not hmac.compare_digest(api_key or "", SYNC_API_KEY):
         raise HTTPException(
             status_code=401, detail="Invalid API sync key."
         )
