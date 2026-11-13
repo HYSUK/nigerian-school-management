@@ -308,7 +308,14 @@ function fees() {
              <label>Sold to<input id="bto"></label>
              <label>Price each (₦)<input id="bpr" type="number" min="0" step="0.01"></label>
              <button id="sellbatch" class="primary">Sell batch</button></div></details>
-             
+             <h2>Generate new card batch</h2>
+             <div class="bar">
+              <label>Batch name<input id="gb" placeholder="2026-JS-BATCH-02" size="18"></label>
+              <label>Section<select id="gsec"><option value="JS">JS</option><option value="SS">SS</option></select></label>
+              <label>Quantity<input id="gqty" type="number" min="1" max="5000" value="50"></label>
+              <button id="genbtn" class="primary">Generate batch</button>
+              <a id="dlcsv" href="#" style="display:none; margin-left:10px; font-weight:700;">Download CSV</a>
+              </div>    
          ${settingsPanel}`;
        const load = run(async () => {
          const [s, d] = await Promise.all([
@@ -356,19 +363,6 @@ function fees() {
            toast('Settings saved');
          });
        }
-
-       // --- NEW: Scratch Card Batch Generator UI & Handler ---
-       main.innerHTML += `
-         <h2>Generate new card batch</h2>
-         <div class="bar">
-           <label>Batch name<input id="gb" placeholder="2026-JS-BATCH-02" size="18"></label>
-           <label>Section<select id="gsec"><option value="JS">JS</option><option value="SS">SS</option></select></label>
-           <label>Quantity<input id="gqty" type="number" min="1" max="5000" value="50"></label>
-           <button id="genbtn" class="primary">Generate batch</button>
-           <a id="dlcsv" href="#" style="display:none; margin-left:10px; font-weight:700;">Download CSV</a>
-         </div>
-       `;
-
        $('#genbtn').onclick = run(async () => {
          const batch_number = $('#gb').value.trim();
          const school_section = $('#gsec').value;
