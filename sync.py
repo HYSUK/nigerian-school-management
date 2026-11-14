@@ -17,7 +17,6 @@ MSSQL_CONN_STR = (
     f"PWD={os.getenv('SQL_SERVER_PASSWORD', '')};"
     "Encrypt=no;"
 )
-)
 
 # =====================================================================
 # 📋 WORKFLOW 1: STUDENT BALANCING ROUTINES
