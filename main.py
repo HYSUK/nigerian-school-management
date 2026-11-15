@@ -5,6 +5,7 @@ from typing import Optional
 import uuid
 from admin import router as admin_router
 from admin_payments import router as payments_router
+from student_fees import router as fees_router
 from admin_cards import router as cards_router, card_problem, guard_check, guard_fail, guard_clear
 from admission_letter import router as letter_router
 from student_portal import router as student_router
@@ -53,6 +54,7 @@ DB_CONN_STR = (
     "Encrypt=no;"
 )
 
+app.include_router(fees_router)
 app.include_router(admin_router)
 app.include_router(cards_router)
 app.include_router(letter_router)
