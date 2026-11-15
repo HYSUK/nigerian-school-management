@@ -67,8 +67,8 @@
             </button>
 
             <a href="/fees" class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-semibold text-sm transition text-slate-400 hover:bg-slate-800/40 hover:text-slate-200">
-    <i class="fa-solid fa-wallet text-base w-5 text-center text-amber-400"></i><span>My Fees</span>
-</a>
+                <i class="fa-solid fa-wallet text-base w-5 text-center text-amber-400"></i><span>My Fees</span>
+            </a>
             
             <div class="h-px bg-slate-800/60 my-4 mx-2"></div>
             
@@ -99,7 +99,7 @@
                 </div>
                 <div>
                     <h1 class="text-base font-extrabold text-slate-900 tracking-tight sm:text-lg" id="topBannerStudentName">{{ first_name }} {{ last_name }}</h1>
-                    <p class="text-xs text-slate-500 font-medium">Class Framework Designation: <span id="topBannerClass" class="font-bold text-slate-700">{{ current_class }}</span></p>
+                    <p class="text-xs text-slate-500 font-medium">Class Section: <span id="topBannerClass" class="font-bold text-slate-700">{{ current_class }}</span></p>
                 </div>
             </div>
             
@@ -112,7 +112,7 @@
                     bg-amber-100 text-amber-800 border border-amber-200 animate-pulse
                 {% endif %}">
                 {% if 'Passed' in admission_status or 'Approved' in admission_status or 'Imported' in admission_status %}
-                    Approved & Synced
+                    Admission Approved
                 {% elif 'Failed' in admission_status %}
                     Admission Declined
                 {% else %}
@@ -164,7 +164,7 @@
                         <div class="space-y-1">
                             <p class="font-bold text-slate-800" id="screeningExplainTitle">What does your current screening status mean?</p>
                             <p class="text-slate-600 leading-relaxed" id="screeningExplainText">
-                                Once the school administration syncs their offline JavaFX database terminal with the centralized cloud service layer, your operational state will lock into approved or failed mode automatically.
+                                Once the school administration update the system your screening score will show to be approved or failed automatically please be patient.
                             </p>
                         </div>
                     </div>
@@ -272,7 +272,7 @@
                     </div>
                     
                     <p id="letterDescription" class="text-sm text-slate-600 leading-relaxed">
-                        If your status shows as approved, you can download your official letter using the secure download link below. Print this letter out and present it at the administrative center to complete your physical verification.
+                        If your status shows as approved, you can download your official Admission Letter using the secure download link below. Print this letter out and present it at the administrative center to complete your physical verification.
                     </p>
                     
                     <div class="pt-3" id="letterActionContainer">
