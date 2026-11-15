@@ -253,7 +253,7 @@
 
                         <div class="border-t border-slate-200 pt-3 text-[11px] text-slate-500 flex justify-between items-center">
                             <span>Printed: <span data-slip="printed">—</span></span>
-                            <span class="font-mono">Printed via Student Cockpit Node</span>
+                            <span class="font-mono">Printed via Student Dashboard</span>
                         </div>
                     </div>
                 </div>
@@ -448,14 +448,14 @@
 
         if (status.includes("Passed") || status.includes("Approved") || status.includes("Imported")) {
             if (badge) {
-                badge.innerText = "Approved & Synced";
+                badge.innerText = "Admission Approved";
                 badge.className = "self-start sm:self-center px-4 py-1.5 rounded-full text-xs font-bold tracking-wide shadow-sm uppercase bg-emerald-100 text-emerald-800 border border-emerald-200";
             }
             if (explainBox) {
                 explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-emerald-200 bg-emerald-50/50";
                 if (explainIcon) explainIcon.className = "fa-solid fa-circle-check text-base text-emerald-600 mt-0.5 flex-shrink-0";
-                if (explainTitle) explainTitle.innerText = "🎉 Congratulations! Admission Clearance Granted";
-                if (explainText) explainText.innerText = "You have met the cutoff mark for your selected class. Your clearance slip is ready for immediate printing.";
+                if (explainTitle) explainTitle.innerText = "🎉 Congratulations! Admission Granted";
+                if (explainText) explainText.innerText = "You have met the cutoff mark for your selected class. Your Admission Letter is ready for immediate printing.";
             }
             if (downloadBtn) {
                 downloadBtn.disabled = false;
@@ -492,7 +492,7 @@
                 explainBox.className = "mt-8 flex items-start space-x-3 text-xs p-4 rounded-xl border border-amber-200 bg-amber-50/50";
                 if (explainIcon) explainIcon.className = "fa-solid fa-clock text-base text-amber-600 mt-0.5 flex-shrink-0";
                 if (explainTitle) explainTitle.innerText = "⏳ Screening Exercise Result Pending";
-                if (explainText) explainText.innerText = "Your screening scores have not been uploaded or synchronized yet. Please check back after the academic screening board concludes evaluation.";
+                if (explainText) explainText.innerText = "Your screening scores have not been uploaded yet. Please check back letter.";
             }
             if (downloadBtn) {
                 downloadBtn.disabled = true;
