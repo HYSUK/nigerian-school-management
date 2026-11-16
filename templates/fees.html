@@ -87,6 +87,15 @@
             const d = await res.json();
             if (!res.ok) throw new Error(typeof d.detail === 'string' ? d.detail : 'Could not load your fees.');
 
+            if (d.locked) {
+                $('who').textContent = `${d.name} · ${d.class}`;
+                document.querySelector('main').innerHTML = `<div class="bg-white border border-slate-200 rounded-2xl p-8 text-center shadow-sm space-y-2">
+                    <i class="fa-solid fa-lock text-3xl text-slate-300"></i>
+                    <h2 class="text-base font-extrabold text-slate-900">Fees are not available yet</h2>
+                    <p class="text-sm text-slate-600">Fees are shown only after your admission is confirmed. Please check your dashboard for your screening decision.</p></div>`;
+                return;
+            }
+
             $('who').textContent = `${d.name} · ${d.class}`;
             $('period').innerHTML = d.periods.map(p => {
                 const sel = p.session === d.session && p.term === d.term ? ' selected' : '';
