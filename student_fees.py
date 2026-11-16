@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from admin import db
+from admin import db, is_admitted
 from admin_payments import _ledger, build_receipt
 from student_portal import _clean, _load_student, _no_store, _student_id, require_student
 
@@ -36,6 +36,9 @@ def my_fees(request: Request, session: str = "", term: str = ""):
         if not me:
             raise HTTPException(404, "Student not found.")
         klass = _clean(me["target_class"]).upper().replace(" ", "")
+        if not is_admitted(me["screening_status"]):
+            return {"success": True, "locked": True, "class": klass,
+                    "name": f"{_clean(me['first_name'])} {_clean(me['last_name'])}".strip()}
 
         # Terms that have fees for this student's class, newest first
         cur.execute(
@@ -88,14 +91,14 @@ def my_receipt(payment_id: int, request: Request):
         cur.execute(
             """SELECT p.payment_id, p.application_id, p.session, p.term, p.fee_name, p.amount_paid, p.method,
                       p.reference, p.paid_on, p.recorded_by, p.recorded_at,
-                      TRIM(COALESCE(s.first_name, '') || ' ' || COALESCE(s.last_name, '')) AS name, s.target_class
+                      TRIM(COALESCE(s.first_name, '') || ' ' || COALESCE(s.last_name, '')) AS name, s.target_class, s.screening_status
                FROM public.cloud_fee_payments p
                LEFT JOIN public.cloud_students_staging s ON UPPER(TRIM(s.application_id)) = UPPER(TRIM(p.application_id))
                WHERE p.payment_id = %s AND UPPER(TRIM(p.application_id)) = UPPER(%s) AND p.voided_at IS NULL""",
             (payment_id, sid),
         )
         r = cur.fetchone()
-        if not r:  # same answer whether it does not exist or belongs to someone else
+        if not r or not is_admitted(r["screening_status"]):  # same answer for missing, someone else's, or locked
             raise HTTPException(404, "Receipt not found.")
         mine = [x for x in _ledger(cur, r["session"], r["term"]) if x["application_id"] == r["application_id"].strip()]
     pdf = build_receipt(r, mine[0]["balance"] if mine else None)

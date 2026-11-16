@@ -165,9 +165,17 @@ def _norm_id(value: str) -> str:
     return value.strip().replace("\\", "/")
 
 
+ADMITTED_WORDS = ("passed", "approved", "imported")
+
+
+def is_admitted(screening_status) -> bool:
+    """A student is admitted once screening says Passed, Approved or Imported."""
+    return (screening_status or "").strip().lower().startswith(ADMITTED_WORDS)
+
+
 def _get_student(cur, app_id: str) -> dict:
     cur.execute(
-        """SELECT application_id, first_name, last_name, target_class
+        """SELECT application_id, first_name, last_name, target_class, screening_status
            FROM public.cloud_students_staging
            WHERE UPPER(TRIM(application_id)) = UPPER(%s)""",
         (_norm_id(app_id),),
@@ -481,6 +489,8 @@ def fee_ledger(application_id: str, session: str = Query(pattern=SESSION_RE), te
                admin: dict = Depends(require("fees"))):
     with db() as cur:
         stu = _get_student(cur, application_id)
+        if not is_admitted(stu["screening_status"]):
+            raise HTTPException(409, "This student has not been admitted yet. Fees apply only to admitted students.")
         cls = (stu["target_class"] or "").strip().upper().replace(" ", "")
         rank = {"ALL": 0, cls[:2]: 1, cls: 2}
         cur.execute("""SELECT class_level, fee_name, amount FROM public.cloud_fee_structure
@@ -510,6 +520,8 @@ def fee_ledger(application_id: str, session: str = Query(pattern=SESSION_RE), te
 def record_payment(payload: PaymentIn, admin: dict = Depends(require("fees"))):
     with db() as cur:
         stu = _get_student(cur, payload.application_id)
+        if not is_admitted(stu["screening_status"]):
+            raise HTTPException(409, "This student has not been admitted yet. Fees apply only to admitted students.")
         cls = (stu["target_class"] or "").strip().upper().replace(" ", "")
         rank = {"ALL": 0, cls[:2]: 1, cls: 2}
         cur.execute("""SELECT class_level, amount FROM public.cloud_fee_structure
