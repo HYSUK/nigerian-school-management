@@ -19,7 +19,7 @@ import os
 import secrets
 import time
 from datetime import date, datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -223,6 +223,33 @@ class ProfileIn(BaseModel):
     junior_sec_from_year: Optional[int] = Field(default=None, ge=1950, le=2100)
     junior_sec_to_year: Optional[int] = Field(default=None, ge=1950, le=2100)
     passport_base64: Optional[str] = Field(default=None, max_length=1_500_000)
+    religion: Literal["Christianity", "Islam", "Other", "Prefer not to say"]
+    field_choice_1: Optional[str] = Field(default=None, max_length=40)
+    field_choice_2: Optional[str] = Field(default=None, max_length=40)
+
+
+def _level_of(row: dict) -> str:
+    return "SS" if _clean(row["target_class"]).upper().replace(" ", "").startswith("SS") else "JS"
+
+
+def _open_fields(cur) -> list:
+    """Fields the school is currently taking applications for (latest session on file)."""
+    cur.execute("""SELECT field FROM public.cloud_field_offerings
+                   WHERE session = (SELECT MAX(session) FROM public.cloud_field_offerings) AND is_open
+                   ORDER BY field""")
+    return [r["field"] for r in cur.fetchall()]
+
+
+@router.get("/api/v1/register/options")
+def register_options(request: Request):
+    sid = require_student(request)
+    with db() as cur:
+        me = _load_student(cur, sid)
+        if not me:
+            raise HTTPException(404, "Student not found.")
+        level = _level_of(me)
+        fields = _open_fields(cur) if level == "SS" else []
+    return {"success": True, "level": level, "fields": fields}
 
 
 @router.post("/api/v1/register")
@@ -242,6 +269,18 @@ def complete_profile(payload: ProfileIn, request: Request):
         if not _is_pending(current):
             raise HTTPException(409, "Your registration is already complete. "
                                      "Contact the school office if something must be changed.")
+
+        # SS students state a field of study (a preference; staff decide the placement)
+        choice1 = (payload.field_choice_1 or "").strip() or None
+        choice2 = (payload.field_choice_2 or "").strip() or None
+        if _level_of(current) == "SS":
+            open_fields = _open_fields(cur)
+            if not choice1 or choice1 not in open_fields:
+                raise HTTPException(422, "Please choose a field of study from the list.")
+            if choice2 and (choice2 not in open_fields or choice2 == choice1):
+                raise HTTPException(422, "Your second choice must be a different field from the list.")
+        else:
+            choice1 = choice2 = None
         cur.execute(
             """UPDATE public.cloud_students_staging
                SET first_name = %s, last_name = %s, gender = %s, date_of_birth = %s, state_of_origin = %s,
@@ -256,6 +295,14 @@ def complete_profile(payload: ProfileIn, request: Request):
              payload.guardian_phone.strip(), payload.prev_primary_school, payload.primary_from_year,
              payload.primary_to_year, payload.prev_junior_sec_school, payload.junior_sec_from_year,
              payload.junior_sec_to_year, payload.passport_base64, sid),
+        )
+        cur.execute(
+            """INSERT INTO public.cloud_student_choices (application_id, religion, field_choice_1, field_choice_2)
+               VALUES (%s, %s, %s, %s)
+               ON CONFLICT (application_id) DO UPDATE
+               SET religion = EXCLUDED.religion, field_choice_1 = EXCLUDED.field_choice_1,
+                   field_choice_2 = EXCLUDED.field_choice_2, submitted_at = now()""",
+            (_clean(current["application_id"]), payload.religion, choice1, choice2),
         )
     return {"success": True, "message": "Profile saved successfully."}
 
