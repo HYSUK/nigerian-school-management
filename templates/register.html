@@ -166,6 +166,42 @@
                     </div>
                 </div>
 
+                <div class="space-y-6 pt-8">
+                    <h3 class="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-book-open"></i> Subject Information
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Religion <span class="text-red-500">*</span></label>
+                            <select id="religion" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium transition">
+                                <option value="" disabled selected>-- Select --</option>
+                                <option>Christianity</option>
+                                <option>Islam</option>
+                                <option>Other</option>
+                                <option>Prefer not to say</option>
+                            </select>
+                            <p class="text-[11px] text-slate-500 mt-1">Used only to assign Religious Studies (CRS or IS). Seen only by school staff.</p>
+                        </div>
+                    </div>
+                    <div id="fieldChoiceBox" class="hidden space-y-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">First Choice of Field of Study <span class="text-red-500">*</span></label>
+                                <select id="field1" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium transition">
+                                    <option value="" disabled selected>-- Select Field --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Second Choice (optional)</label>
+                                <select id="field2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-medium transition">
+                                    <option value="">-- None --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-500">Your choice is a preference. The school places students using screening performance and the places available in each field.</p>
+                    </div>
+                </div>
+
             </div>
 
             <div class="bg-slate-50 px-8 py-5 border-t border-slate-100 flex items-center justify-end">
@@ -203,6 +239,15 @@
                 document.getElementById('juniorHighHistoryContainer').classList.remove('hidden');
             }
             
+            fetch('/api/v1/register/options').then(r => r.ok ? r.json() : null).then(o => {
+                if (!o) return;
+                if (o.level === 'SS') document.getElementById('fieldChoiceBox').classList.remove('hidden');
+                (o.fields || []).forEach(f => {
+                    document.getElementById('field1').add(new Option(f, f));
+                    document.getElementById('field2').add(new Option(f, f));
+                });
+            }).catch(() => {});
+
             const stateDropdown = document.getElementById('stateOfOrigin');
             if (stateDropdown) {
                 Object.keys(NIGERIAN_GEO_MAP).forEach(s => {
@@ -271,6 +316,20 @@
                 return;
             }
 
+            if (!document.getElementById('religion').value) {
+                showWizardAlert("Please select the student's religion. It is used only to assign Religious Studies.", "error");
+                return;
+            }
+            const choiceBoxShown = !document.getElementById('fieldChoiceBox').classList.contains('hidden');
+            if (choiceBoxShown && !document.getElementById('field1').value) {
+                showWizardAlert("Please choose a first choice of field of study.", "error");
+                return;
+            }
+            if (choiceBoxShown && document.getElementById('field2').value && document.getElementById('field2').value === document.getElementById('field1').value) {
+                showWizardAlert("Your second choice must be different from your first choice.", "error");
+                return;
+            }
+
             if (!globalPassportBase64) {
                 showWizardAlert("An official passport photo attachment is required.", "error");
                 return;
@@ -305,7 +364,10 @@
                 prev_junior_sec_school: document.getElementById('prevJunior').value.trim() || null,
                 junior_sec_from_year: jFrom ? parseInt(jFrom) : null,
                 junior_sec_to_year: jTo ? parseInt(jTo) : null,
-                passport_base64: globalPassportBase64
+                passport_base64: globalPassportBase64,
+                religion: document.getElementById('religion').value,
+                field_choice_1: document.getElementById('field1').value || null,
+                field_choice_2: document.getElementById('field2').value || null
             };
 
             try {
