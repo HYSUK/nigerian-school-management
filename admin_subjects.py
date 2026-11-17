@@ -68,6 +68,56 @@ def set_active(subject_id: int, payload: ActiveIn, admin: dict = Depends(require
     return {"success": True}
 
 
+class SubjectEdit(BaseModel):
+    name: str = Field(min_length=2, max_length=80)
+    category: Literal["core", "elective"]
+    field: Optional[str] = Field(default=None, max_length=40)
+    pick_group: Optional[str] = Field(default=None, max_length=40)
+
+
+def _has_scores(cur, name: str) -> bool:
+    cur.execute("SELECT 1 FROM public.cloud_assessments WHERE subject = %s LIMIT 1", (name,))
+    return cur.fetchone() is not None
+
+
+@router.put("/{subject_id}")
+def edit_subject(subject_id: int, payload: SubjectEdit, admin: dict = Depends(require(AREA))):
+    field = (payload.field or "").strip() or None
+    with db() as cur:
+        cur.execute("SELECT name, level FROM public.cloud_subjects WHERE subject_id = %s", (subject_id,))
+        old = cur.fetchone()
+        if not old:
+            raise HTTPException(404, "Subject not found.")
+        if field and old["level"] != "SS":
+            raise HTTPException(422, "Fields of study apply to SS subjects only.")
+        new_name = payload.name.strip()
+        if new_name != old["name"] and _has_scores(cur, old["name"]):
+            raise HTTPException(409, "Scores are already recorded under this name, so it cannot be renamed. "
+                                     "Add the corrected subject and switch this one off.")
+        cur.execute(
+            """UPDATE public.cloud_subjects SET name = %s, category = %s, field = %s, pick_group = %s
+               WHERE subject_id = %s""",
+            (new_name, payload.category, field, (payload.pick_group or "").strip() or None, subject_id),
+        )
+        audit(cur, admin, "subject.edit", f"{old['level']} {old['name']}", {"new_name": new_name})
+    return {"success": True}
+
+
+@router.delete("/{subject_id}")
+def remove_subject(subject_id: int, admin: dict = Depends(require(AREA))):
+    with db() as cur:
+        cur.execute("SELECT name, level FROM public.cloud_subjects WHERE subject_id = %s", (subject_id,))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(404, "Subject not found.")
+        if _has_scores(cur, row["name"]):
+            raise HTTPException(409, "Scores are already recorded under this subject, so it cannot be removed. "
+                                     "Switch it off instead.")
+        cur.execute("DELETE FROM public.cloud_subjects WHERE subject_id = %s", (subject_id,))
+        audit(cur, admin, "subject.remove", f"{row['level']} {row['name']}", {})
+    return {"success": True}
+
+
 # ---------------------------------------------------------------- fields offered per session
 @router.get("/offerings")
 def list_offerings(session: str = Query(pattern=SESSION_RE), admin: dict = Depends(require(AREA))):
