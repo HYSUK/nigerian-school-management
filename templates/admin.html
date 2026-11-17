@@ -420,7 +420,7 @@ function subjects() {
     <div class="bar"><label>Level<select id="lv"><option value="">All</option><option>JS</option><option>SS</option></select></label>
       <label>Search<input id="q" type="search" placeholder="Subject name" size="22"></label></div>
     <div class="tablewrap"><table><thead><tr><th>Subject</th><th>Level</th><th>Type</th><th>Field</th><th>Pick one of</th><th>Status</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
-    <h2>Add a subject</h2>
+    <h2 id="fh">Add a subject</h2>
     <div class="bar">
       <label>Name<input id="sn" size="26"></label>
       <label>Level<select id="sl"><option>JS</option><option>SS</option></select></label>
@@ -428,19 +428,28 @@ function subjects() {
       <label>Field (SS electives)<input id="sf" list="fl" size="14" placeholder="Science"></label>
       <datalist id="fl"><option>Science</option><option>Humanities</option><option>Business</option><option>Technical</option></datalist>
       <label>Pick one of (group)<input id="sg" size="14" placeholder="Trade"></label>
-      <button id="sadd" class="primary">Add subject</button></div>
+      <button id="sadd" class="primary">Add subject</button>
+      <button id="scancel" hidden>Cancel</button></div>
     <h2>Fields offered</h2>
     <div class="bar"><label>Session<input id="os" value="${esc(period.session)}" size="9"></label></div>
     <div class="tablewrap"><table><thead><tr><th>Field</th><th>Places</th><th>Minimum screening score</th><th>Open</th><th></th></tr></thead><tbody id="ofr"></tbody></table></div>
     <p class="muted">Leave places or minimum score empty for no limit. The minimum score only warns staff when placing students; it never blocks them.</p>
     ${limitsPanel}`;
-  let all = [];
+
+  let all = [], editing = null;
+  const reset = () => {
+    editing = null;
+    $('#sn').value = ''; $('#sf').value = ''; $('#sg').value = '';
+    $('#sl').disabled = false;
+    $('#fh').textContent = 'Add a subject'; $('#sadd').textContent = 'Add subject'; $('#scancel').hidden = true;
+  };
   const draw = () => {
     const q = $('#q').value.trim().toLowerCase();
     const rows = all.filter(s => !q || s.name.toLowerCase().includes(q));
     $('#rows').innerHTML = rows.length ? rows.map(s => `<tr data-id="${s.subject_id}" style="${s.is_active ? '' : 'opacity:.55'}">
       <td>${esc(s.name)}</td><td>${s.level}</td><td>${s.category === 'core' ? 'Compulsory' : 'Elective'}</td><td>${esc(s.field || '')}</td><td>${esc(s.pick_group || '')}</td>
-      <td>${s.is_active ? 'On' : 'Switched off'}</td><td><button class="link tog">${s.is_active ? 'Switch off' : 'Switch on'}</button></td></tr>`).join('')
+      <td>${s.is_active ? 'On' : 'Switched off'}</td>
+      <td><button class="link ed">Edit</button> <button class="link tog">${s.is_active ? 'Switch off' : 'Switch on'}</button> <button class="link danger del">Remove</button></td></tr>`).join('')
       : '<tr><td colspan="7" class="empty">No subjects match.</td></tr>';
   };
   const loadSubjects = run(async () => { all = (await api('GET', '/admin/api/subjects?level=' + $('#lv').value)).subjects; draw(); });
@@ -451,25 +460,48 @@ function subjects() {
       <td><input type="number" min="0" max="100" class="min" value="${o.min_score ?? ''}"></td>
       <td><input type="checkbox" class="opn"${o.is_open ? ' checked' : ''}></td><td><button class="save">Save</button></td></tr>`).join('');
   });
-  $('#lv').onchange = loadSubjects; $('#q').oninput = draw; $('#os').onchange = loadOfferings;
+
+  $('#lv').onchange = loadSubjects; $('#q').oninput = draw; $('#os').onchange = loadOfferings; $('#scancel').onclick = reset;
+
   $('#rows').onclick = run(async e => {
-    if (!e.target.classList.contains('tog')) return;
-    const s = all.find(x => x.subject_id == e.target.closest('tr').dataset.id);
-    await api('POST', `/admin/api/subjects/${s.subject_id}/active`, { is_active: !s.is_active }); loadSubjects();
+    const tr = e.target.closest('tr');
+    if (!tr || !tr.dataset.id) return;
+    const s = all.find(x => x.subject_id == tr.dataset.id), c = e.target.classList;
+    if (c.contains('tog')) {
+      await api('POST', `/admin/api/subjects/${s.subject_id}/active`, { is_active: !s.is_active });
+      loadSubjects();
+    }
+    if (c.contains('ed')) {
+      editing = s.subject_id;
+      $('#sn').value = s.name; $('#sl').value = s.level; $('#sl').disabled = true; $('#st').value = s.category;
+      $('#sf').value = s.field || ''; $('#sg').value = s.pick_group || '';
+      $('#fh').textContent = 'Edit subject'; $('#sadd').textContent = 'Save changes'; $('#scancel').hidden = false;
+      $('#sn').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('#sn').focus();
+    }
+    if (c.contains('del') && confirm(`Remove ${s.name} (${s.level}) completely? If scores are recorded under it, switch it off instead.`)) {
+      await api('DELETE', `/admin/api/subjects/${s.subject_id}`);
+      toast('Subject removed'); reset(); loadSubjects(); loadOfferings();
+    }
   });
+
   $('#sadd').onclick = run(async () => {
-    await api('POST', '/admin/api/subjects', { name:$('#sn').value, level:$('#sl').value, category:$('#st').value, field:$('#sf').value || null, pick_group:$('#sg').value || null });
-    toast('Subject added'); $('#sn').value = ''; loadSubjects(); loadOfferings();
+    const body = { name: $('#sn').value, category: $('#st').value, field: $('#sf').value || null, pick_group: $('#sg').value || null };
+    if (editing) { await api('PUT', `/admin/api/subjects/${editing}`, body); toast('Subject updated'); }
+    else { await api('POST', '/admin/api/subjects', { ...body, level: $('#sl').value }); toast('Subject added'); }
+    reset(); loadSubjects(); loadOfferings();
   });
+
   $('#ofr').onclick = run(async e => {
     if (!e.target.classList.contains('save')) return;
     const tr = e.target.closest('tr'), val = c => tr.querySelector(c).value;
-    await api('POST', '/admin/api/subjects/offerings', { session:$('#os').value.trim(), field:tr.dataset.field,
-      capacity: val('.cap') === '' ? null : +val('.cap'), min_score: val('.min') === '' ? null : +val('.min'), is_open: tr.querySelector('.opn').checked });
+    await api('POST', '/admin/api/subjects/offerings', { session: $('#os').value.trim(), field: tr.dataset.field,
+      capacity: val('.cap') === '' ? null : +val('.cap'), min_score: val('.min') === '' ? null : +val('.min'),
+      is_open: tr.querySelector('.opn').checked });
     toast('Saved');
   });
+
   if (ROLE === 'admin') {
-    const keys = { jmin:'js_min_subjects', jmax:'js_max_subjects', smin:'ss_min_subjects', smax:'ss_max_subjects' };
+    const keys = { jmin: 'js_min_subjects', jmax: 'js_max_subjects', smin: 'ss_min_subjects', smax: 'ss_max_subjects' };
     api('GET', '/admin/api/subjects/rules').then(r => Object.entries(keys).forEach(([id, k]) => $('#' + id).value = r[k])).catch(() => {});
     $('#rsave').onclick = run(async () => {
       await api('POST', '/admin/api/subjects/rules', Object.fromEntries(Object.entries(keys).map(([id, k]) => [k, +$('#' + id).value])));
